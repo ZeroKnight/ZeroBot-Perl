@@ -1,0 +1,58 @@
+ZeroBot ToDo List, updated: May 05, 2014 @ 14:55:53
+
+Core
+-------
+
+* Use PoCo::IRC::Plugin::Proxy to allow for transparent bot restarts/reloads
+    + Ability to add/modify commands and subroutines without disconnecting
+    + In the same sense, IRC connection is not lost on crashes
+        - Might make crashes a bit hard to notice... perhaps proxy can make use
+          of some kind of heartbeat to check on the bot and quit with a silly
+          message (eg. "Whoops, lost my ghost", "gtg, just died inside").
+
+* Core will be as minimal as possible, and various bot functions should be
+  modules that can be dynamically loaded (eg. !loadmod quotes)
+
+Modules
+----------
+
+* chat-quote
+    + Quote database
+* chat-badcmd
+    + Taunt the user for entering an improperly typed command
+* chat-joingreet
+    + Greet channel residents when the bot joins a channel
+* chat-lolxeno
+    + Ruthlessly taunt that disgrace of a creature whenever it shamelessly spews
+      lexical diarrhea onto our screens
+* chat-name
+    + Mentally unstable and obnoxious responses to being mentioned by name
+* chat-right
+    + Respond in various yes/no fashion from a list of phrases when asked for
+      confirmation (eg. "Right, ZeroBot?" "Go fuck yourself.").
+* silencer
+    + Kick and/or ban users for uttering certain phrases or words
+        - * dumbass slaps prettycoolguy around with a large fishbot
+          * dumbass was kicked by ZeroBot [ 'Get the fuck off qwebirc' ]
+* puppet
+    + Force the bot to say or act something in a channel, or send raw data
+* game-rr
+    + A game of russian roulette. Loser gets kicked if bot has op
+* game-nguess
+    + Number guessing game
+* game-21
+    + A game of Blackjack
+* 8ball
+    + Magic 8Ball phrases
+* encode
+    + Encode/Decode a string using a variety of algorithms
+        - rot13, md5, sha256, sha512, base64
+* dns
+    + Resolve DNS records
+* youtube
+    + Counts and keeps track of youtube links. Shameless rip from redroid
+* twss
+    + Counts number of times that they said it. Shameless rip from redroid
+* eval
+    + Evaluate mathematical expressions and code
+        - Support for languages other than perl? Like Lua? Python? etc
