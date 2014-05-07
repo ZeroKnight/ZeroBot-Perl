@@ -17,7 +17,12 @@ Modules
 ----------
 
 * chat-quote
-    + Quote database
+    + Quote database.
+* chat-babelbaba
+    + Separate "quote" database for Wazubaba's native language. Will randomly
+      return a "quote" from this db (or at random, ?????) as a "translation"
+      whenever Wazubaba utters gibberish. Only Wazubaba and certain ranked
+      members may add to this database.
 * chat-badcmd
     + Taunt the user for entering an improperly typed command
 * chat-joingreet
