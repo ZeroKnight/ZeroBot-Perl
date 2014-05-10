@@ -11,10 +11,20 @@ Core
           message (eg. "Whoops, lost my ghost", "gtg, just died inside").
 
 * Core will be as minimal as possible, and various bot functions should be
-  modules that can be dynamically loaded (eg. !loadmod quotes)
+  modules that can be dynamically loaded (eg. !loadmod chat-quote)
 
 Modules
 ----------
+
+* Implement module system. Allow said modules to be dynamically (un)loaded
+    + Idea from graphitemaster's redroid to denote module type
+        - CMD (only on command), ALL (on any message; conditionals help), TIME
+          (module will be run on a periodic basis)
+    + For now, hardcode everything encased in a conditional to let "modules" be
+      "(un)loaded" at will
+
+Actual Module ToDo List
+--------------------------
 
 * chat-quote
     + Quote database.
@@ -25,14 +35,10 @@ Modules
       members may add to this database.
 * chat-badcmd
     + Taunt the user for entering an improperly typed command
-* chat-joingreet
-    + Greet channel residents when the bot joins a channel
 * chat-lolxeno
     + Ruthlessly taunt that disgrace of a creature whenever it shamelessly spews
       lexical diarrhea onto our screens
-* chat-name
-    + Mentally unstable and obnoxious responses to being mentioned by name
-* chat-right
+* chat-agree
     + Respond in various yes/no fashion from a list of phrases when asked for
       confirmation (eg. "Right, ZeroBot?" "Go fuck yourself.").
 * silencer
