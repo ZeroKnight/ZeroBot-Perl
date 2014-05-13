@@ -1,11 +1,21 @@
 #!/usr/bin/env perl
 
-use 5.010;
+use v5.14;
 use strict;
 use warnings;
 
-use DBI;
 use POE qw(Component::IRC::State);
+require 'modules/test.pm';
+ZeroBot::test->import();
+
+use DBI;
+use Digest::MD5 qw(md5_hex);
+use Digest::SHA qw(sha256_hex sha512_hex);
+use Digest::CRC qw(crc32_hex);
+use MIME::Base64;
+
+# TODO: make randomization a bit better and remember last used phrase for all
+# tables, then skip it if it comes up again back-to-back
 
 # TODO: move this somewhere that makes sense
 srand(time * 1000);
@@ -52,6 +62,8 @@ POE::Session->create(
             _start
             irc_001
             irc_public
+            irc_ctcp_action
+            irc_msg
             irc_join
         ) ],
     ],
@@ -62,6 +74,10 @@ POE::Session->create(
                 bullet => int(rand(6)),
                 shot => 0,
             },
+            nguess => {
+                magicnum => int(rand(100)) + 1,
+                guessnum => 0,
+            }
         },
     },
 );
@@ -105,25 +121,77 @@ sub irc_public {
     my $nick = (split /!/, $who)[0];
     my $channel = $where->[0];
 
-    if ($what =~ /right,? $me\??/i) {
-        # chat_agree: Agree or disagree when someone asks
-        chat_agree($channel) if module_enabled('chat_agree');
-    } elsif ($what =~ /$me/) {
+    given ($what) {
+        when (/right,? $me\??/i) { # TODO: add variety/variances
+            # chat_agree: Agree or disagree when someone asks
+            chat_agree($channel) if module_enabled('chat_agree');
+        } when (/^$cmdprefix/) {
+            my @cmd = parse_command($what);
+            given ($cmd[0]) {
+                when ('encode') { # TODO: add more encodings
+                    if (my $output = cmd_encode($cmd[1], "@cmd[2..$#cmd]", $channel)) {
+                        $poco_irc->yield(privmsg => $channel => "$nick: @cmd[2..$#cmd] = $output");
+                    } else {
+                        return;
+                    }
+                } when ('roulette') {
+                    cmd_roulette($heap, $channel, $nick);
+                } when ('guess') {
+                    cmd_nguess($heap, $channel, $nick, $cmd[1]);
+                } when ('8ball') {
+                    if ($what =~ /\?$/) { # TODO: check better (ie. actual words before ?)
+                        cmd_8ball($channel, $nick);
+                    } else {
+                        # TODO: Randomize these phrases
+                        $poco_irc->yield(privmsg => $channel => "$nick: A question, if you would.");
+                    }
+                } when ('restart') {
+                    if ($nick eq 'ZeroKnight') {
+                        # call these in _stop? call exec in _stop with some bool
+                        $poco_irc->call($_[SESSION], privmsg => $channel => "Okay, brb!"); # FIXME
+                        $poco_irc->call(shutdown => "Restarted by $nick");
+                        exec "$0 $ARGV[0]";
+                        exit 0; # is this necessary?
+                    }
+                } when ('say') {
+                    $poco_irc->yield(privmsg => $channel => "@cmd[1..$#cmd]");
+                } when ('test') {
+                    ZeroBot::test->test($_[KERNEL], $_[SESSION], $channel);
+                } default {
+                    chat_badcmd($channel) if module_enabled('chat_badcmd');
+                }
+            }
+        } when (/$me/i) {
+            # chat_mention: Respond to name being used
+            chat_mention($channel) if module_enabled('chat_mention');
+        }
+    }
+    return;
+}
+
+sub irc_msg {
+    my ($sender, $who, $where, $what) = @_[SENDER, ARG0 .. ARG2];
+    my $poco_irc = $sender->get_heap();
+    my $nick = (split /!/, $who)[0];
+
+    if ($what =~ /^$cmdprefix/) {
+        my @cmd = parse_command($what);
+        if ($cmd[0] eq 'say') {
+            $poco_irc->yield(privmsg => $cmd[1] => "@cmd[2..$#cmd]");
+        }
+    }
+}
+
+sub irc_ctcp_action {
+    my ($sender, $heap, $who, $where, $what) = @_[SENDER, HEAP, ARG0 .. ARG2];
+    my $poco_irc = $sender->get_heap();
+    my $me = $poco_irc->nick_name;
+    my $nick = (split /!/, $who)[0];
+    my $channel = $where->[0];
+
+    if ($what =~ /$me/i) {
         # chat_mention: Respond to name being used
         chat_mention($channel) if module_enabled('chat_mention');
-    } elsif ($what =~ /^$cmdprefix/) {
-        my $cmd = (split /$cmdprefix|\s/, $what)[1];
-        if ($cmd eq 'encode') {
-            cmd_encode(
-                (split /\s/, $what, 3)[2],
-                (split /\s/, $what)[1],
-                $channel
-            );
-        } elsif ($cmd eq 'roulette') {
-            cmd_roulette($heap, $channel, $nick);
-        } else {
-            chat_badcmd($channel) if module_enabled('chat_badcmd');
-        }
     }
     return;
 }
@@ -159,6 +227,12 @@ sub _default {
 # TODO: move this to module-related shit
 sub module_enabled {
     return 1;
+}
+
+sub parse_command {
+    my @args = (split /\s/, shift);
+    $args[0] =~ tr/!//d; # trim $cmdprefix
+    return @args;
 }
 
 # TODO: Move repetative sql setup to function?
@@ -215,19 +289,45 @@ sub chat_badcmd {
 }
 
 sub cmd_encode {
-    my ($input, $algorithm, $channel) = @_;
-    if ($algorithm eq 'rot13') {
-        $input =~ tr[a-zA-Z][n-za-mN-ZA-M];
-        $poco_irc->yield(privmsg => $channel => $input);
-    } else {
+    my ($algorithm, $input, $channel) = @_;
+
+    unless (length $input) {
+        chat_badcmd($channel);
         return '';
     }
+    given($algorithm) {
+        $input =~ tr[a-zA-Z][n-za-mN-ZA-M]  when 'rot13';
+        $input = uc md5_hex($input)         when 'md5';
+        $input = sha256_hex($input)         when 'sha256';
+        $input = sha512_hex($input)         when 'sha512';
+        $input = crc32_hex($input)          when 'crc32';
+        $input = encode_base64($input)      when 'base64';
+        default {
+            chat_badcmd($channel);
+            return '';
+        }
+    }
+    return $input;
 }
 
 sub cmd_roulette {
     my ($heap, $channel, $nick) = @_;
     my $bullet = \$heap->{game}{roulette}{bullet};
     my $shot = \$heap->{game}{roulette}{shot};
+
+    if ($nick == $poco_irc->nick_name) {
+        $poco_irc->yield(ctcp => $channel =>
+            "ACTION rotates the chamber and laughs, pointing the gun at $nick"
+        );
+        if ($poco_irc->is_channel_operator(
+                $channel,
+                $poco_irc->nick_name,
+        )) {
+            $poco_irc->yield(kick => $channel => $nick => "BANG! You died.");
+        } else {
+            
+        }
+    }
 
     if ($$shot++ != $$bullet) {
         $poco_irc->yield(privmsg => $channel => "CLICK! Who's next?");
@@ -246,4 +346,37 @@ sub cmd_roulette {
         $$shot = 0;
     }
     return;
+}
+
+sub cmd_nguess {
+    my ($heap, $channel, $nick, $guess) = @_;
+    my $magicnum = \$heap->{game}{nguess}{magicnum};
+    my $guessnum = \$heap->{game}{nguess}{guessnum};
+
+    unless ($guess =~ /\d+/) {
+        # TODO: Randomize these phrases
+        $poco_irc->yield(privmsg => $channel => "$nick: Try a number...");
+        return;
+    }
+
+    $$guessnum++;
+    if ($guess == $$magicnum) {
+        $poco_irc->yield(privmsg => $channel => "DING! $nick wins! It took a total of $$guessnum guesses.");
+        $poco_irc->yield(privmsg => $channel => "I'm thinking of another number between 1-100 ...can you guess it?");
+        $$magicnum = int(rand(100)) + 1;
+        $$guessnum = 0;
+    } elsif ($guess > $$magicnum) {
+        $poco_irc->yield(privmsg => $channel => "$nick: Too high!");
+    } elsif ($guess < $$magicnum) {
+        $poco_irc->yield(privmsg => $channel => "$nick: Too low!");
+    }
+}
+
+sub cmd_8ball {
+    my ($channel, $nick) = @_;
+    my $sql = 'SELECT * FROM magic_8ball ORDER BY RANDOM() LIMIT 1';
+    my $sth = $dbh->prepare($sql);
+    $sth->execute;
+    my @row = $sth->fetchrow_array;
+    $poco_irc->yield(privmsg => $channel => "$nick: $row[0]");
 }

@@ -22,10 +22,20 @@ Modules
           (module will be run on a periodic basis)
     + For now, hardcode everything encased in a conditional to let "modules" be
       "(un)loaded" at will
+* For games and similar (ie. nguess, 8ball, etc) that need randomized phrases
+  for various reasons, use a 'misc_phrases' table with a 'module' column that
+  modules may reference when they need to pull a phrase.
 
 Actual Module ToDo List
 --------------------------
 
+* chat-joingreet
+    + extend to greet people who join the channel (move to separate module?)
+    + use existing chat_joingreet table with separate entries for others
+      joining, mark with a bool 'others' column of sorts
+* chat-panda
+    + ZeroBot lurvs teh pandar. Say nice things about her, and/or sexually
+      explicit things.
 * chat-quote
     + Quote database.
 * chat-babelbaba
@@ -33,31 +43,17 @@ Actual Module ToDo List
       return a "quote" from this db (or at random, ?????) as a "translation"
       whenever Wazubaba utters gibberish. Only Wazubaba and certain ranked
       members may add to this database.
-* chat-badcmd
-    + Taunt the user for entering an improperly typed command
 * chat-lolxeno
     + Ruthlessly taunt that disgrace of a creature whenever it shamelessly spews
       lexical diarrhea onto our screens
-* chat-agree
-    + Respond in various yes/no fashion from a list of phrases when asked for
-      confirmation (eg. "Right, ZeroBot?" "Go fuck yourself.").
 * silencer
     + Kick and/or ban users for uttering certain phrases or words
         - * dumbass slaps prettycoolguy around with a large fishbot
           * dumbass was kicked by ZeroBot [ 'Get the fuck off qwebirc' ]
 * puppet
     + Force the bot to say or act something in a channel, or send raw data
-* game-rr
-    + A game of russian roulette. Loser gets kicked if bot has op
-* game-nguess
-    + Number guessing game
 * game-21
     + A game of Blackjack
-* 8ball
-    + Magic 8Ball phrases
-* encode
-    + Encode/Decode a string using a variety of algorithms
-        - rot13, md5, sha256, sha512, base64
 * dns
     + Resolve DNS records
 * youtube
@@ -67,3 +63,5 @@ Actual Module ToDo List
 * eval
     + Evaluate mathematical expressions and code
         - Support for languages other than perl? Like Lua? Python? etc
+        - Can fork() for safety and get result from that somehow, maybe via a
+          file descriptor or socket
