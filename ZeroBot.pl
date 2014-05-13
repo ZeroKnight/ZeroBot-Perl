@@ -5,14 +5,14 @@ use strict;
 use warnings;
 
 use POE qw(Component::IRC::State);
-require 'modules/test.pm';
-ZeroBot::test->import();
 
 use DBI;
 use Digest::MD5 qw(md5_hex);
 use Digest::SHA qw(sha256_hex sha512_hex);
 use Digest::CRC qw(crc32_hex);
 use MIME::Base64;
+
+use ZeroBot::module::test;
 
 # TODO: make randomization a bit better and remember last used phrase for all
 # tables, then skip it if it comes up again back-to-back
@@ -47,7 +47,7 @@ my $dbh = DBI->connect($dsn, '', '', {
 });
 
 # create a new poco-irc object
-my $poco_irc = POE::Component::IRC::State->spawn(
+our $poco_irc = POE::Component::IRC::State->spawn(
     nick => $networks{wazuhome}{nickname},
     username => $networks{wazuhome}{username},
     ircname => $networks{wazuhome}{realname},
@@ -129,8 +129,8 @@ sub irc_public {
             my @cmd = parse_command($what);
             given ($cmd[0]) {
                 when ('encode') { # TODO: add more encodings
-                    if (my $output = cmd_encode($cmd[1], "@cmd[2..$#cmd]", $channel)) {
-                        $poco_irc->yield(privmsg => $channel => "$nick: @cmd[2..$#cmd] = $output");
+                    if (my $output = cmd_encode($cmd[1], "@cmd[2..-1]", $channel)) {
+                        $poco_irc->yield(privmsg => $channel => "$nick: @cmd[2..-1] = $output");
                     } else {
                         return;
                     }
@@ -154,9 +154,9 @@ sub irc_public {
                         exit 0; # is this necessary?
                     }
                 } when ('say') {
-                    $poco_irc->yield(privmsg => $channel => "@cmd[1..$#cmd]");
+                    $poco_irc->yield(privmsg => $channel => "@cmd[1..-1]");
                 } when ('test') {
-                    ZeroBot::test->test($_[KERNEL], $_[SESSION], $channel);
+                    ZeroBot::module::test->test($_[KERNEL], $_[SESSION], $channel);
                 } default {
                     chat_badcmd($channel) if module_enabled('chat_badcmd');
                 }
@@ -177,7 +177,7 @@ sub irc_msg {
     if ($what =~ /^$cmdprefix/) {
         my @cmd = parse_command($what);
         if ($cmd[0] eq 'say') {
-            $poco_irc->yield(privmsg => $cmd[1] => "@cmd[2..$#cmd]");
+            $poco_irc->yield(privmsg => $cmd[1] => "@cmd[2..-1]");
         }
     }
 }
@@ -220,7 +220,7 @@ sub _default {
             push(@output, "'$arg'");
         }
     }
-    print join ' ', @output, "\n";
+    say "@output";
     return;
 }
 
