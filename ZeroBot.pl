@@ -18,12 +18,18 @@ use ZeroBot::Module::Encode;
 use ZeroBot::Module::Roulette;
 use ZeroBot::Module::NumGuess;
 use ZeroBot::Module::Puppet;
+use ZeroBot::Module::Quotes;
 
 # TODO: make randomization a bit better and remember last used phrase for all
 # tables, then skip it if it comes up again back-to-back
 
 # TODO: move this somewhere that makes sense
 srand(time);
+
+# XXX: experimental fuckery to hopefully improve entropy
+foreach my $i (50 .. rand(100)) {
+    rand(100);
+}
 
 my $botversion = '0.1a';
 my $cmdprefix = '!';
@@ -179,6 +185,8 @@ sub irc_public {
                     puppet_do($channel, $nick, "@cmd[1 .. $#cmd]");
                 } when ('raw') {
                     puppet_raw($nick, "@cmd[1 .. $#cmd]");
+                } when ('quote') {
+                    quote_recite($channel, $nick, $cmd[1]);
                 } default {
                     badcmd($channel);
                 }
