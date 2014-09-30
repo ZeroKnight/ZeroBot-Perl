@@ -5,8 +5,8 @@ use strict;
 use warnings;
 
 use POE qw(Component::IRC::State);
-
 use DBI;
+use Math::Random::MT qw(srand rand);
 
 use ZeroBot::Module::JoinGreet;
 use ZeroBot::Module::Mention;
@@ -23,13 +23,9 @@ use ZeroBot::Module::Quotes;
 # TODO: make randomization a bit better and remember last used phrase for all
 # tables, then skip it if it comes up again back-to-back
 
-# TODO: move this somewhere that makes sense
+# NOTE: Use OO interface for MT when zerobot is more refined and OO
+# Seed our MT PRNG
 srand(time);
-
-# XXX: experimental fuckery to hopefully improve entropy
-foreach my $i (50 .. rand(100)) {
-    rand(100);
-}
 
 my $botversion = '0.1a';
 my $cmdprefix = '!';
