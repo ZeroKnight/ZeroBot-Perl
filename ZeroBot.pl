@@ -158,15 +158,16 @@ sub irc_public {
                     } else {
                         magic_8ball_invalid($channel, $nick);
                     }
+                # TODO: randomize phrases for restart and die
                 } when ('restart') {
                     if ($nick eq 'ZeroKnight') {
                         $should_respawn = 1;
-                        $irc->call(privmsg => $channel => "Okay, brb!"); # FIXME
+                        $irc->call(privmsg => $channel => "Okay, brb!");
                         $irc->yield(shutdown => "Restarted by $nick");
                     }
                 } when ('die') {
                     if ($nick eq 'ZeroKnight') {
-                        $irc->call(privmsg => $channel => "Okay :("); # FIXME
+                        $irc->call(privmsg => $channel => "Okay :(");
                         $irc->yield(shutdown => "Killed by $nick");
                     }
                 } when ('say') {
