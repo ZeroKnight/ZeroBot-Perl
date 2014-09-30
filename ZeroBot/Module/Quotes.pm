@@ -8,7 +8,7 @@ use warnings;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(quote_recite);
+our @EXPORT = qw(quote_recite quote_add);
 
 my $module_name = 'Quotes';
 

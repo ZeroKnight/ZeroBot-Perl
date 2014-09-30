@@ -183,7 +183,7 @@ sub irc_public {
                 } when ('raw') {
                     puppet_raw($nick, "@cmd[1 .. $#cmd]");
                 } when ('quote') {
-                    quote_recite($channel, $nick, $cmd[1]);
+                    quote_recite($channel, $nick, "@cmd[1 .. $#cmd]");
                 } default {
                     badcmd($channel);
                 }
