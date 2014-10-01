@@ -10,6 +10,8 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(quote_recite quote_add quote_del);
 
+use POSIX qw(strftime);
+
 my $module_name = 'Quotes';
 
 # TODO: Implement inclusive filtering by pattern, author, submitter, etc
@@ -47,9 +49,9 @@ sub quote_add {
     my $quote;
     $style = 1 if !defined $style;
     my $rows = $main::dbh->do(q{
-        INSERT INTO quotes (phrase, author, submitter, style)
-        VALUES (?, ?, ?, ?)
-    }, undef, ($phrase, $author, $submitter, $style));
+        INSERT INTO quotes (phrase, author, submitter, style, date, time)
+        VALUES (?, ?, ?, ?, ?, ?)
+    }, undef, ($phrase, $author, $submitter, $style, strftime("%F", localtime), strftime("%T", localtime)));
 
     given ($style) {
         when (0) {
