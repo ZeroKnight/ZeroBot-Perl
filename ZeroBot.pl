@@ -50,7 +50,7 @@ my $dsn = "dbi:SQLite:dbname=$dbfile";
 our $dbh = DBI->connect($dsn, '', '', {
     PrintError       => 1,
     RaiseError       => 0,
-    AutoCommit       => 0,
+    AutoCommit       => 1,
     FetchHashKeyName => 'NAME_lc',
 });
 
