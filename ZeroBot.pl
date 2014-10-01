@@ -183,7 +183,36 @@ sub irc_public {
                 } when ('raw') {
                     puppet_raw($nick, "@cmd[1 .. $#cmd]");
                 } when ('quote') {
-                    quote_recite($channel, $nick, "@cmd[1 .. $#cmd]");
+                    given ($cmd[1]) {
+                        when ('-add') {
+                            if (@cmd < 4) {
+                                badcmd($channel);
+                                return;
+                            }
+                            my ($author, $style, $phrase);
+                            if ($cmd[2] eq '-style') {
+                                if (@cmd < 6) {
+                                    badcmd($channel);
+                                    return;
+                                }
+                                $style = $cmd[3];
+                                $author = $cmd[4];
+                                $phrase = "@cmd[5 .. $#cmd]";
+                            } else {
+                                $author = $cmd[2];
+                                $phrase = "@cmd[3 .. $#cmd]";
+                            }
+                            quote_add($channel, $nick, $author, $phrase, $nick, $style);
+                        } when ('-del') {
+                            if (@cmd < 4) {
+                                badcmd($channel);
+                                return;
+                            }
+                            quote_del($channel, $nick, $cmd[2], "@cmd[3 .. $#cmd]");
+                        } default {
+                            quote_recite($channel, $nick, "@cmd[1 .. $#cmd]");
+                        }
+                    }
                 } default {
                     badcmd($channel);
                 }
