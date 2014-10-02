@@ -31,7 +31,7 @@ sub roulette {
         return;
     } else {
         # TODO: un-hardcode the master user
-        if ($target eq 'ZeroKnight') {
+        if ($target eq 'ZeroKnight' and int(rand(2)) {
             my @nicklist = grep { $_ ne 'ZeroKnight' } $main::irc->channel_list($channel);
             $scapegoat = $nicklist[int(rand(scalar @nicklist))];
             $main::irc->yield(privmsg => $channel =>
