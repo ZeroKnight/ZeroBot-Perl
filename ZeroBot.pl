@@ -19,6 +19,7 @@ use ZeroBot::Module::Roulette;
 use ZeroBot::Module::NumGuess;
 use ZeroBot::Module::Puppet;
 use ZeroBot::Module::Quotes;
+use ZeroBot::Module::BabelBaba;
 
 # TODO: make randomization a bit better and remember last used phrase for all
 # tables, then skip it if it comes up again back-to-back
@@ -153,7 +154,7 @@ sub irc_public {
                 } when ('guess') {
                     numguess($channel, $nick, $cmd[1]);
                 } when ('8ball') {
-                    if ($what =~ /.+\?$/) {
+                    if ($what =~ /.+\?(\s+)?$/) {
                         magic_8ball_answer($channel, $nick);
                     } else {
                         magic_8ball_invalid($channel, $nick);
@@ -213,6 +214,8 @@ sub irc_public {
                             quote_recite($channel, $nick, "@cmd[1 .. $#cmd]");
                         }
                     }
+                } when ('translate') {
+                    babelbaba_translate($channel, $nick);
                 } default {
                     badcmd($channel);
                 }
@@ -317,3 +320,25 @@ sub parse_command {
     return @args;
 }
 
+#sub parse_command {
+    #my (%cmdhash, $lastarg);
+    #foreach my $arg (split /\s/, shift) {
+        #if ($arg =~ /^-/) { # NOTE: this might be compressable
+            #if ($lastarg =~ /^-/) {
+                #$cmdhash{$arg} = undef;
+            #} else {
+                #$cmdhash{$lastarg} = $arg;
+            #}
+        #}
+    #} continue {
+        #$lastarg = $arg;
+    #}
+        #if arg starts with '-'
+            #add arg to hash as key
+            #if next arg also starts with '-'
+                #add arg to hash as key
+            #else
+                #add arg as value to last key
+        #else
+            #add arg to hash as key
+#}
