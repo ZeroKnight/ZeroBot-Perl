@@ -215,7 +215,23 @@ sub irc_public {
                         }
                     }
                 } when ('translate') {
-                    babelbaba_translate($channel, $nick);
+                    given ($cmd[1]) {
+                        when ('-add') {
+                            if (@cmd < 3) {
+                                badcmd($channel);
+                                return;
+                            }
+                            babelbaba_add($channel, $nick, "@cmd[2 .. $#cmd]");
+                        } when ('-del') {
+                            if (@cmd <3) {
+                                badcmd($channel);
+                                return;
+                            }
+                            babelbaba_del($channel, $nick, "@cmd[2 .. $#cmd]");
+                        } default {
+                            babelbaba_translate($channel, $nick);
+                        }
+                    }
                 } default {
                     badcmd($channel);
                 }
