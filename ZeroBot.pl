@@ -144,6 +144,8 @@ sub irc_public {
     given ($what) {
         when ($nick eq 'xxen0nxx') {
             trollxeno($channel);
+        } when ($nick eq 'Wazubaba') {
+            babelbaba_translate($channel, $nick) if is_nonsense($what);
         } when (/^$cmdprefix/) {
             my @cmd = parse_command($what);
             given ($cmd[0]) {
