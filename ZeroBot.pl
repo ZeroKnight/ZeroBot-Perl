@@ -239,8 +239,8 @@ sub irc_public {
         } when (is_question($what)) {
             # question: Agree, disagree or be unsure with a question
             answer_question($channel, $nick);
-        } when (is_nonsense($what)) {
-            babelbaba_translate($channel, $nick) if $nick eq 'Wazubaba';
+        } when (is_nonsense($what) and $nick eq 'Wazubaba') {
+            babelbaba_translate($channel, $nick);
         } default {
             #mention: Respond to name being used
             respond_to_mention($channel) if /$me/i;
