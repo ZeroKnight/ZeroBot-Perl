@@ -18,7 +18,7 @@ sub is_nonsense {
     # TODO: Add trigger words
     my @triggers = (
         qr/T_T/,
-        qr/(?i)(bobb|jimm|dadd)(eh|y|uh)/,
+        qr/(?i)(bobb|(t|j)imm|dadd)(eh|y|uh)/,
         qr/(?i)a+u+g+h+/,
         qr/(?i)e+c+u+b+e+/,
         qr/(?i)fecal/,
@@ -30,10 +30,13 @@ sub is_nonsense {
         qr/(?i)c+a+t+s+/,
         qr/(?i)(corn|carrot|onion|potato|turnip|tomato|lettuce|cabbage)/,
         qr/(?i)vi(t|d)+(a+|u+|le)s+/,
-        qr/(?i)poo+pdi+(a+)?ck/,
+        qr/(?i)(poo+p)?\s?di+(a+)?ck\s(poo+p)?/,
         qr/(?i)stain/,
         qr/(?i)sphincter/,
         qr/(?i)(dr\.|doctor) phil/,
+        qr/(?i)stink\s?finger/,
+        qr/(?i)mamba/,
+        qr/(?i)liverwurst/,
     );
 
     foreach my $regex (@triggers) {
