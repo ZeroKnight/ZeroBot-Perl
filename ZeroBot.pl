@@ -144,8 +144,6 @@ sub irc_public {
     given ($what) {
         when ($nick eq 'xxen0nxx') {
             trollxeno($channel);
-        } when ($nick eq 'Wazubaba') {
-            babelbaba_translate($channel, $nick) if is_nonsense($what);
         } when (/^$cmdprefix/) {
             my @cmd = parse_command($what);
             given ($cmd[0]) {
@@ -241,6 +239,8 @@ sub irc_public {
         } when (is_question($what)) {
             # question: Agree, disagree or be unsure with a question
             answer_question($channel, $nick);
+        } when (is_nonsense($what)) {
+            babelbaba_translate($channel, $nick) if $nick eq 'Wazubaba';
         } default {
             #mention: Respond to name being used
             respond_to_mention($channel) if /$me/i;
