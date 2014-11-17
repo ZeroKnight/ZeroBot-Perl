@@ -12,48 +12,57 @@ our @EXPORT = qw(is_nonsense babelbaba_translate babelbaba_add babelbaba_del);
 
 my $module_name = 'BabelBaba';
 
+use YAML qw(LoadFile);
+
 sub is_nonsense {
     my $what = shift;
 
-    # TODO: Add trigger words
-    my @triggers = (
-        qr/T_T/,
-        qr/(?i)(bobb|(t|j)imm|dadd)(eh|y|uh)/,
-        qr/(?i)a+u+g+h+/,
-        qr/(?i)e+c+u+b+e+/,
-        qr/(?i)fecal/,
-        qr/(?i)insert/,
-        qr/(?i)an(al|us)/,
-        qr/(?i)banana/,
-        qr/(?i)amish/,
-        qr/(?i)d+o+g+s+/,
-        qr/(?i)c+a+t+s+/,
-        qr/(?i)(corn|carrot|onion|potato|turnip|tomato|lettuce|cabbage)/,
-        qr/(?i)vi(t|d)+(a+|u+|le)s+/,
-        qr/(?i)(poo+p)?\s?di+(a+)?ck\s(poo+p)?/,
-        qr/(?i)stain/,
-        qr/(?i)sphincter/,
-        qr/(?i)(dr\.|doctor) phil/,
-        qr/(?i)stink\s?finger/,
-        qr/(?i)mamba/,
-        qr/(?i)liverwurst/,
-    );
+    # Load module configuration
+    # FIXME: Need to optimize config loading for modules; don't explicitly load
+    # every time a function is called, just when it's updated. This goes for
+    # everything config related.
+    my $config = LoadFile('config/BabelBaba.yaml');
 
-    foreach my $regex (@triggers) {
-        if ($what =~ /$regex/) {
-            return 1;
+    # Walk the triggers hash
+    while (my ($key, $value) = each $config->{triggers}) {
+        foreach my $regex (@{$value}) {
+            if (ref $regex eq 'HASH') { # 'fuzzy' hash
+                foreach my $fuzzy (@{$regex->{fuzzy}}) {
+                    $fuzzy =~ s/(.)/$1+/gs;
+                    $fuzzy = "(?i)$fuzzy" if $key eq 'case-insensitive';
+                    if ($what =~ /\b$fuzzy\b/) {
+                        return 1;
+                    }
+                }
+            } else {
+                $regex = "(?i)$regex" if $key eq 'case-insensitive';
+                if ($what =~ /\b$regex\b/) {
+                    return 1;
+                }
+            }
         }
     }
+
+    # No matches
     return 0;
 }
 
 sub babelbaba_translate {
-    my ($target, $sender) = @_;
+    my ($target, $sender, $is_auto) = @_;
+
+    my $config = LoadFile('config/BabelBaba.yaml');
+
+    # If intended to be an auto-translation, chance it
+    if ($is_auto) {
+        unless (int(rand($config->{settings}{'auto-chance'})) == 0) {
+            return;
+        }
+    }
 
     my $translation;
 
-    # 1 in 10 chance of being unable to translate
-    if (int(rand(10)) == 1) {
+    # Chance of being unable to translate
+    if (int(rand($config->{settings}{'fail-chance'})) == 0) {
         $translation = '?????????';
     } else {
         my @ary = $main::dbh->selectrow_array(q{

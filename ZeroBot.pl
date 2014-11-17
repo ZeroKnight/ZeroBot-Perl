@@ -7,6 +7,7 @@ use warnings;
 use POE qw(Component::IRC::State);
 use DBI;
 use Math::Random::MT qw(srand rand);
+use YAML qw(LoadFile);
 
 use ZeroBot::Module::JoinGreet;
 use ZeroBot::Module::Mention;
@@ -240,7 +241,7 @@ sub irc_public {
             # question: Agree, disagree or be unsure with a question
             answer_question($channel, $nick);
         } when (is_nonsense($what) and $nick eq 'Wazubaba') {
-            babelbaba_translate($channel, $nick);
+            babelbaba_translate($channel, $nick, 1);
         } default {
             #mention: Respond to name being used
             respond_to_mention($channel) if /$me/i;
