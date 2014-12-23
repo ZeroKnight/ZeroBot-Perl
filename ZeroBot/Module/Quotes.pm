@@ -8,7 +8,7 @@ use warnings;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(quote_recite quote_add quote_del);
+our @EXPORT = qw(quote_recite quote_add quote_del quote_help);
 
 use POSIX qw(strftime);
 
@@ -95,6 +95,19 @@ sub quote_del {
         }
     }
     $main::irc->yield(privmsg => $target => "Okay, removing: $quote");
+}
+
+sub quote_help {
+    my $target = shift;
+
+    $main::irc->yield(privmsg => $target => "quote [pattern] | `pattern` is an optional perl-regex string to filter quotes based on author OR quote content.");
+    $main::irc->yield(privmsg => $target => "quote -add [-style <style>] <author> <phrase> ...");
+    $main::irc->yield(privmsg => $target => "quote -del <author> <phrase> ... | When removing, <author> and <phrase> must be EXACT");
+    $main::irc->yield(privmsg => $target => "`style` defines how the quote should be displayed, and can be any of the following (1 is implicit default):");
+    $main::irc->yield(privmsg => $target => "   0: Only the quote itself is shown, no other formatting is applied. WYSIWYG.");
+    $main::irc->yield(privmsg => $target => "   1: The author is prefixed to the quote. Ex: <foo> bar!");
+    $main::irc->yield(privmsg => $target => "   2: Quote will be displayed as an ACTION. Ex: * foo bars about");
+    $main::irc->yield(privmsg => $target => "   3: Elegant style. The quote is wrapped in '\"' and the author is appended to the quote following a hyphen. Ex: \"Bar.\" - foo");
 }
 
 1;

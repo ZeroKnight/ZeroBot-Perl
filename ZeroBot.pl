@@ -211,6 +211,8 @@ sub irc_public {
                                 return;
                             }
                             quote_del($channel, $nick, $cmd[2], "@cmd[3 .. $#cmd]");
+                        } when ('-help') {
+                            quote_help($nick);
                         } default {
                             quote_recite($channel, $nick, "@cmd[1 .. $#cmd]");
                         }
