@@ -198,11 +198,25 @@ sub irc_public {
                                     return;
                                 }
                                 $style = $cmd[3];
-                                $author = $cmd[4];
-                                $phrase = "@cmd[5 .. $#cmd]";
+                                if ($cmd[4] =~ /^"/) {
+                                    my $index = 4;
+                                    $index++ until $cmd[$index] =~ /"$/;
+                                    $author = join(' ', @cmd[4 .. $index]) =~ tr/"//dr;
+                                    $phrase = "@cmd[$index+1 .. $#cmd]";
+                                } else {
+                                    $author = $cmd[4];
+                                    $phrase = "@cmd[5 .. $#cmd]";
+                                }
                             } else {
-                                $author = $cmd[2];
-                                $phrase = "@cmd[3 .. $#cmd]";
+                                if ($cmd[2] =~ /^"/) {
+                                    my $index = 2;
+                                    $index++ until $cmd[$index] =~ /"$/;
+                                    $author = join(' ', @cmd[2 .. $index]) =~ tr/"//dr;
+                                    $phrase = "@cmd[$index+1 .. $#cmd]";
+                                } else {
+                                    $author = $cmd[2];
+                                    $phrase = "@cmd[3 .. $#cmd]";
+                                }
                             }
                             quote_add($channel, $nick, $author, $phrase, $nick, $style);
                         } when ('-del') {
@@ -210,7 +224,15 @@ sub irc_public {
                                 badcmd($channel);
                                 return;
                             }
-                            quote_del($channel, $nick, $cmd[2], "@cmd[3 .. $#cmd]");
+                            my $author = $cmd[2];
+                            my $phrase = "@cmd[3 .. $#cmd]";
+                            if ($cmd[2] =~ /^"/) {
+                                my $index = 2;
+                                $index++ until $cmd[$index] =~ /"$/;
+                                $author = join(' ', @cmd[2 .. $index]) =~ tr/"//dr;
+                                $phrase = "@cmd[$index+1 .. $#cmd]";
+                            }
+                            quote_del($channel, $nick, $author, $phrase);
                         } when ('-help') {
                             quote_help($nick);
                         } default {
@@ -341,25 +363,3 @@ sub parse_command {
     return @args;
 }
 
-#sub parse_command {
-    #my (%cmdhash, $lastarg);
-    #foreach my $arg (split /\s/, shift) {
-        #if ($arg =~ /^-/) { # NOTE: this might be compressable
-            #if ($lastarg =~ /^-/) {
-                #$cmdhash{$arg} = undef;
-            #} else {
-                #$cmdhash{$lastarg} = $arg;
-            #}
-        #}
-    #} continue {
-        #$lastarg = $arg;
-    #}
-        #if arg starts with '-'
-            #add arg to hash as key
-            #if next arg also starts with '-'
-                #add arg to hash as key
-            #else
-                #add arg as value to last key
-        #else
-            #add arg to hash as key
-#}
