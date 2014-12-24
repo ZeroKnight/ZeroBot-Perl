@@ -142,18 +142,19 @@ sub irc_public {
     my $channel = $where->[0];
     my $is_chanop = $irc->is_channel_operator($channel, $me);
 
-    given ($what) {
+    foreach ($what) {
         when ($nick eq 'xxen0nxx') {
             trollxeno($channel);
         } when (/^$cmdprefix/) {
-            my @cmd = parse_command($what);
-            given ($cmd[0]) {
+            my %cmd = parse_command($what);
+            my @cmdarg = @{ $cmd{arg} }; # shortcut
+            foreach ($cmd{name}) {
                 when ('encode') { # TODO: add more encodings
-                    encode($channel, $nick, $cmd[1], "@cmd[2 .. $#cmd]");
+                    encode($channel, $nick, $cmdarg[0], "@cmdarg[1 .. $#cmdarg]");
                 } when ('roulette') {
                     roulette($channel, $nick);
                 } when ('guess') {
-                    numguess($channel, $nick, $cmd[1]);
+                    numguess($channel, $nick, $cmdarg[0]);
                 } when ('8ball') {
                     if ($what =~ /.+\?(\s+)?$/) {
                         magic_8ball_answer($channel, $nick);
@@ -173,87 +174,50 @@ sub irc_public {
                         $irc->yield(shutdown => "Killed by $nick");
                     }
                 } when ('say') {
-                    if ($cmd[1] !~ /roulette/) {
-                        # Normal puppeting
-                        puppet_say($channel, $nick, "@cmd[1 .. $#cmd]");
-                    } else {
+                    if ($cmdarg[0] eq '!roulette') {
                         # Nice try, wise guy
                         puppet_roulette($channel, $nick);
+                    } else {
+                        # Normal puppeting
+                        puppet_say($channel, $nick, "@cmdarg");
                     }
                 } when ('do') {
-                    puppet_do($channel, $nick, "@cmd[1 .. $#cmd]");
+                    puppet_do($channel, $nick, "@cmdarg");
                 } when ('raw') {
-                    puppet_raw($nick, "@cmd[1 .. $#cmd]");
+                    puppet_raw($nick, "@cmdarg");
                 } when ('quote') {
-                    given ($cmd[1]) {
-                        when ('-add') {
-                            if (@cmd < 4) {
-                                badcmd($channel);
-                                return;
-                            }
-                            my ($author, $style, $phrase);
-                            if ($cmd[2] eq '-style') {
-                                if (@cmd < 6) {
-                                    badcmd($channel);
-                                    return;
-                                }
-                                $style = $cmd[3];
-                                if ($cmd[4] =~ /^"/) {
-                                    my $index = 4;
-                                    $index++ until $cmd[$index] =~ /"$/;
-                                    $author = join(' ', @cmd[4 .. $index]) =~ tr/"//dr;
-                                    $phrase = "@cmd[$index+1 .. $#cmd]";
-                                } else {
-                                    $author = $cmd[4];
-                                    $phrase = "@cmd[5 .. $#cmd]";
-                                }
-                            } else {
-                                if ($cmd[2] =~ /^"/) {
-                                    my $index = 2;
-                                    $index++ until $cmd[$index] =~ /"$/;
-                                    $author = join(' ', @cmd[2 .. $index]) =~ tr/"//dr;
-                                    $phrase = "@cmd[$index+1 .. $#cmd]";
-                                } else {
-                                    $author = $cmd[2];
-                                    $phrase = "@cmd[3 .. $#cmd]";
-                                }
-                            }
-                            quote_add($channel, $nick, $author, $phrase, $nick, $style);
-                        } when ('-del') {
-                            if (@cmd < 4) {
-                                badcmd($channel);
-                                return;
-                            }
-                            my $author = $cmd[2];
-                            my $phrase = "@cmd[3 .. $#cmd]";
-                            if ($cmd[2] =~ /^"/) {
-                                my $index = 2;
-                                $index++ until $cmd[$index] =~ /"$/;
-                                $author = join(' ', @cmd[2 .. $index]) =~ tr/"//dr;
-                                $phrase = "@cmd[$index+1 .. $#cmd]";
-                            }
-                            quote_del($channel, $nick, $author, $phrase);
-                        } when ('-help') {
-                            quote_help($nick);
-                        } default {
-                            quote_recite($channel, $nick, "@cmd[1 .. $#cmd]");
+                    if (exists $cmd{opt}{add} or exists $cmd{opt}{del}) {
+                        if (@cmdarg < 2) {
+                            badcmd($channel);
+                            return;
                         }
+                        compress_arg(0, \@cmdarg) if $cmdarg[0] =~ /^"/;
+                        if (exists $cmd{opt}{add}) {
+                            quote_add($channel, $nick, $cmdarg[0],
+                                      "@cmdarg[1 .. $#cmdarg]",
+                                      $nick, $cmd{opt}{style}
+                            );
+                        } elsif (exists $cmd{opt}{del}) {
+                            quote_del($channel, $nick, $cmdarg[0],
+                                      "@cmdarg[1 .. $#cmdarg]"
+                            );
+                        }
+                    } elsif (exists $cmd{opt}{help}) {
+                        quote_help($nick);
+                    } else {
+                        quote_recite($channel, $nick, @cmdarg);
                     }
                 } when ('translate') {
-                    given ($cmd[1]) {
-                        when ('-add') {
-                            if (@cmd < 3) {
-                                badcmd($channel);
-                                return;
-                            }
-                            babelbaba_add($channel, $nick, "@cmd[2 .. $#cmd]");
-                        } when ('-del') {
-                            if (@cmd <3) {
-                                badcmd($channel);
-                                return;
-                            }
-                            babelbaba_del($channel, $nick, "@cmd[2 .. $#cmd]");
-                        } default {
+                    if (exists $cmd{opt}{add} or exists $cmd{opt}{del}) {
+                        if (@cmdarg < 1) {
+                            badcmd($channel);
+                            return;
+                        }
+                        if (exists $cmd{opt}{add}) {
+                            babelbaba_add($channel, $nick, "@cmdarg");
+                        } elsif (exists $cmd{opt}{del}) {
+                            babelbaba_del($channel, $nick, "@cmdarg");
+                        } else {
                             babelbaba_translate($channel, $nick);
                         }
                     }
@@ -281,22 +245,23 @@ sub irc_msg {
     my $me = $irc->nick_name;
     my $nick = (split /!/, $who)[0];
 
-    given ($what) {
+    foreach ($what) {
         when (/^$cmdprefix/) {
-            my @cmd = parse_command($what);
-            given ($cmd[0]) {
+            my %cmd = parse_command($what);
+            my @cmdarg = @{ $cmd{arg} }; # shortcut
+            foreach ($cmd{name}) {
                 when ('say') {
-                    if ($cmd[2] !~ /roulette/) {
-                        # Normal puppeting
-                        puppet_say($cmd[1], $nick, "@cmd[2 .. $#cmd]");
-                    } else {
+                    if ($cmdarg[0] eq '!roulette') {
                         # Nice try, wise guy
-                        puppet_roulette($cmd[1], $nick);
+                        puppet_roulette($cmdarg[0], $nick);
+                    } else {
+                        # Normal puppeting
+                        puppet_say($cmdarg[0], $nick, "@cmdarg[1 .. $#cmdarg]");
                     }
                 } when ('do') {
-                    puppet_do($cmd[1], $nick, "@cmd[2 .. $#cmd]");
+                    puppet_do($cmdarg[0], $nick, "@cmdarg[1 .. $#cmdarg]");
                 } when ('raw') {
-                    puppet_raw($nick, "@cmd[1 .. $#cmd]");
+                    puppet_raw($nick, "@cmdarg");
                 } default {
                     badcmd($nick);
                 }
@@ -358,8 +323,60 @@ sub _stop {
 }
 
 sub parse_command {
-    my @args = (split /\s/, shift);
-    $args[0] =~ tr/!//d; # trim $cmdprefix
-    return @args;
+    my ($lastarg, $need_optval, @opt, @val);
+    my $parse_opts = 1;
+    my %cmdhash = (
+        name => undef,
+        opt => {},
+        arg => []
+    );
+
+    foreach my $arg (split /\s/, shift) {
+        if ($need_optval) {
+            if ($arg =~ /"$/) { # End of value; add to hash
+                push @val, $arg =~ tr/"//dr;
+                $cmdhash{opt}{$opt[0]} = join(' ', @val);
+                $need_optval = 0;
+                @opt = (); @val = ();
+            } else { # Still part of value
+                push @val, $arg;
+            }
+        } else {
+            if ($parse_opts and $arg =~ /^!\w+/) {
+                # Command Name
+                $cmdhash{name} = $arg =~ tr/!//dr;
+            } elsif ($parse_opts and $arg =~ /^-\w+=/) {
+                # Option with value
+                $arg =~ tr/-//d;
+                @opt = split('=', $arg);
+                if ($opt[1] =~ /^"/) { # Value consists of multiple args
+                    push @val, $opt[1] =~ tr/"//dr;
+                    $need_optval = 1;
+                } else {
+                    $cmdhash{opt}{$opt[0]} = $opt[1];
+                }
+            } elsif ($parse_opts and $arg =~ /^-\w+/) {
+                # Option with no value
+                $arg =~ tr/-//d;
+                $cmdhash{opt}{$arg} = undef;
+            } else {
+                # We've hit arguments, stop parsing options (and name)
+                $parse_opts = 0 if $parse_opts;
+                push $cmdhash{arg}, $arg;
+            }
+        }
+    }
+    return %cmdhash;
+}
+
+sub compress_arg {
+    # Compress quoted args into one. Takes an array reference
+    # TODO: add this and parse_command to ZeroBot::Util; croak if $args is not a reference
+    my ($start, $args) = @_;
+
+    my $index = $start;
+    $index++ until $args->[$index] =~ /"$/;
+    splice @$args, $start, $index+1, "@$args[$start .. $index]";
+    $args->[$start] =~ tr/"//d;
 }
 
