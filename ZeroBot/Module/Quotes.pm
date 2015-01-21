@@ -101,8 +101,9 @@ sub quote_help {
     my $target = shift;
 
     $main::irc->yield(privmsg => $target => "quote [pattern] | `pattern` is an optional perl-regex string to filter quotes based on author OR quote content.");
-    $main::irc->yield(privmsg => $target => "quote -add [-style <style>] <author> <phrase> ...");
+    $main::irc->yield(privmsg => $target => "quote -add [-style=<style>] <author> <phrase> ...");
     $main::irc->yield(privmsg => $target => "quote -del <author> <phrase> ... | When removing, <author> and <phrase> must be EXACT");
+    $main::irc->yield(privmsg => $target => "If <author> is more than one word, surround it in double quotes (\"). Ex: !quote -add \"foo bar\" foo!");
     $main::irc->yield(privmsg => $target => "`style` defines how the quote should be displayed, and can be any of the following (1 is implicit default):");
     $main::irc->yield(privmsg => $target => "   0: Only the quote itself is shown, no other formatting is applied. WYSIWYG.");
     $main::irc->yield(privmsg => $target => "   1: The author is prefixed to the quote. Ex: <foo> bar!");
