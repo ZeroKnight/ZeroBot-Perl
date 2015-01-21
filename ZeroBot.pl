@@ -331,7 +331,7 @@ sub parse_command {
         arg => []
     );
 
-    foreach my $arg (split /\s/, shift) {
+    foreach my $arg (split /\s+/, shift) {
         if ($need_optval) {
             if ($arg =~ /"$/) { # End of value; add to hash
                 push @val, $arg =~ tr/"//dr;
