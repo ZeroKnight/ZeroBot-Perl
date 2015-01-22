@@ -43,7 +43,7 @@ sub quote_recite {
         }
     }
     $main::irc->yield(privmsg => $target => $quote);
-    quote_setlast('recite', $ary[0], $ary[1]);
+    quote_setlast('recite', $ary[1], $ary[0]);
 }
 
 sub quote_add {
@@ -68,7 +68,7 @@ sub quote_add {
         }
     }
     $main::irc->yield(privmsg => $target => "$sender: Okay, adding: $quote");
-    quote_setlast('add', $phrase, $author);
+    quote_setlast('add', $author, $phrase);
 }
 
 sub quote_del {
@@ -99,7 +99,7 @@ sub quote_del {
         }
     }
     $main::irc->yield(privmsg => $target => "$sender: Okay, removing: $quote");
-    quote_setlast('del', $ary[0], $ary[1]);
+    quote_setlast('del', $ary[1], $ary[0]);
 }
 
 sub quote_help {
@@ -126,7 +126,7 @@ sub quote_undo {
 
     foreach ($lastcmd) {
         when ('add') { # Remove last added quote
-            quote_del($target, $sender, $lastquote[1], $lastquote[0]);
+            quote_del($target, $sender, $lastquote[0], $lastquote[1]);
             quote_setlast('del', @lastquote);
         } default {
             badcmd($target);
