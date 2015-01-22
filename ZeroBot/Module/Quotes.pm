@@ -98,7 +98,7 @@ sub quote_del {
             $quote = join(' ', '"'.$ary[0].'"', $style);
         }
     }
-    $main::irc->yield(privmsg => $target => "Okay, removing: $quote");
+    $main::irc->yield(privmsg => $target => "$sender: Okay, removing: $quote");
     quote_setlast('del', $ary[0], $ary[1]);
 }
 
