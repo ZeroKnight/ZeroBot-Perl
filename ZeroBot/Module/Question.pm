@@ -33,13 +33,22 @@ sub is_question {
 }
 
 sub answer_question {
-    my ($target, $sender) = @_;
+# $bias is the answer type to be biased toward. Values are identical to their
+# mapped value in the DB. 0 = Negative, 1 = Positive, 2 = Indifferent
+# If $bias is undef, normal behavior occurs
+    my ($target, $sender, $bias) = @_;
+    my $atype = int(rand(3));
+
+    if (defined $bias) {
+        # 3:1 chance of using being biased
+        $atype = $bias unless int(rand(3)) == 0;
+    }
 
     my @ary = $main::dbh->selectrow_array(q{
         SELECT * FROM question
         WHERE agree=?
         ORDER BY RANDOM() LIMIT 1;
-    }, undef, int(rand(3))) or die $main::dbh->errstr;
+    }, undef, $atype) or die $main::dbh->errstr;
     if ($ary[1]) {
         $main::irc->yield(ctcp => $target => "ACTION $ary[0]");
     } else {

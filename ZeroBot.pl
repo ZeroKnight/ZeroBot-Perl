@@ -227,7 +227,11 @@ sub irc_public {
             }
         } when (is_question($what)) {
             # question: Agree, disagree or be unsure with a question
-            answer_question($channel, $nick);
+            if ($what =~ /would you kindly/i) {
+                answer_question($channel, $nick, 1);
+            } else {
+                answer_question($channel, $nick);
+            }
         } when (is_nonsense($what) and $nick eq 'Wazubaba') {
             babelbaba_translate($channel, $nick, 1);
         } default {
