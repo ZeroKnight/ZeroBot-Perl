@@ -8,11 +8,13 @@ use warnings;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(quote_recite quote_add quote_del quote_help);
-
-use POSIX qw(strftime);
+our @EXPORT = qw(quote_recite quote_add quote_del quote_help quote_undo);
 
 my $module_name = 'Quotes';
+
+use POE;
+use POSIX qw(strftime);
+use ZeroBot::Module::BadCmd;
 
 # TODO: Implement inclusive filtering by pattern, author, submitter, etc
 sub quote_recite {
@@ -41,6 +43,7 @@ sub quote_recite {
         }
     }
     $main::irc->yield(privmsg => $target => $quote);
+    quote_setlast('recite', $ary[0], $ary[1]);
 }
 
 sub quote_add {
@@ -65,6 +68,7 @@ sub quote_add {
         }
     }
     $main::irc->yield(privmsg => $target => "$sender: Okay, adding: $quote");
+    quote_setlast('add', $phrase, $author);
 }
 
 sub quote_del {
@@ -95,6 +99,7 @@ sub quote_del {
         }
     }
     $main::irc->yield(privmsg => $target => "Okay, removing: $quote");
+    quote_setlast('del', $ary[0], $ary[1]);
 }
 
 sub quote_help {
@@ -109,6 +114,31 @@ sub quote_help {
     $main::irc->yield(privmsg => $target => "   1: The author is prefixed to the quote. Ex: <foo> bar!");
     $main::irc->yield(privmsg => $target => "   2: Quote will be displayed as an ACTION. Ex: * foo bars about");
     $main::irc->yield(privmsg => $target => "   3: Elegant style. The quote is wrapped in '\"' and the author is appended to the quote following a hyphen. Ex: \"Bar.\" - foo");
+}
+
+sub quote_undo {
+    my ($target, $sender) = @_;
+    my $session = $poe_kernel->get_active_session();
+    my $heap = $session->get_heap();
+    my $lastcmd = $heap->{quote}{lastcmd};
+    my @lastquote = @{ $heap->{quote}{lastquote} };
+
+    foreach ($lastcmd) {
+        when ('add') { # Remove last added quote
+            quote_del($target, $sender, $lastquote[1], $lastquote[0]);
+            quote_setlast('del', @lastquote);
+        } default {
+            badcmd($target);
+        }
+    }
+}
+
+sub quote_setlast {
+    my $session = $poe_kernel->get_active_session();
+    my $heap = $session->get_heap();
+
+    $heap->{quote}{lastcmd} = shift;
+    @{ $heap->{quote}{lastquote} } = @_;
 }
 
 1;

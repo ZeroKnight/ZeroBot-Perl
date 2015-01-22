@@ -91,6 +91,10 @@ POE::Session->create(
                 guessnum => 0,
             }
         },
+        quote => {
+            lastcmd => undef,
+            lastquote => [ undef, undef ],
+        },
     },
 );
 
@@ -204,6 +208,8 @@ sub irc_public {
                         }
                     } elsif (exists $cmd{opt}{help}) {
                         quote_help($nick);
+                    } elsif (exists $cmd{opt}{undo}) {
+                        quote_undo($channel, $nick);
                     } else {
                         quote_recite($channel, $nick, @cmdarg);
                     }
@@ -286,8 +292,16 @@ sub irc_ctcp_action {
     my $nick = (split /!/, $who)[0];
     my $channel = $where->[0];
 
-    #mention: Respond to name being used
-    respond_to_mention($channel) if $what =~ /$me/i;
+    foreach ($what) {
+        when (is_question($what)) {
+            #mention: Respond to name being used
+            answer_question($channel, $nick);
+        } when (is_nonsense($what) and $nick eq 'Wazubaba') {
+            babelbaba_translate($channel, $nick, 1);
+        } default {
+            respond_to_mention($channel) if /$me/i;
+        }
+    }
     return;
 }
 
