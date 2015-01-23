@@ -211,7 +211,7 @@ sub irc_public {
                     } elsif (exists $cmd{opt}{undo}) {
                         quote_undo($channel, $nick);
                     } else {
-                        quote_recite($channel, $nick, @cmdarg);
+                        quote_recite($channel, $nick, $cmdarg[0], "@cmdarg[1 .. $#cmdarg]")
                     }
                 } when ('translate') {
                     if (exists $cmd{opt}{add} or exists $cmd{opt}{del}) {

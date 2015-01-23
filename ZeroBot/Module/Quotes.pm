@@ -18,15 +18,17 @@ use ZeroBot::Module::BadCmd;
 
 # TODO: Implement inclusive filtering by pattern, author, submitter, etc
 sub quote_recite {
-    my ($target, $sender, $pattern, $author, $submitter) = @_;
-
+    my ($target, $sender, $author, $pattern, $submitter) = @_;
     my ($style, $quote);
-    $pattern = '.' unless defined $pattern;
+
+    # '*' is syntactic sugar for '.*' in quote command (only if alone)
+    $author = '.' if !$author or $author eq '*';
+    $pattern = '.' if !$pattern or $pattern eq '*';
     my @ary = $main::dbh->selectrow_array(q{
         SELECT * FROM quotes
-        WHERE author REGEXP ? OR phrase REGEXP ?
+        WHERE author REGEXP ? AND phrase REGEXP ?
         ORDER BY RANDOM() LIMIT 1;
-    }, undef, ("(?i:$pattern)", "(?i:$pattern)"));
+    }, undef, ("(?i:$author)", "(?i:$pattern)"));
     given ($ary[5]) {
         when (0) {
             $style = '';
@@ -105,7 +107,7 @@ sub quote_del {
 sub quote_help {
     my $target = shift;
 
-    $main::irc->yield(privmsg => $target => "quote [pattern] | `pattern` is an optional perl-regex string to filter quotes based on author OR quote content.");
+    $main::irc->yield(privmsg => $target => "quote [author] [pattern] | Both arguments are perl-regex patterns. A lone '*' is equivalent to '.*' (match anything). If unspecified, '*' is implied.");
     $main::irc->yield(privmsg => $target => "quote -add [-style=<style>] <author> <phrase> ...");
     $main::irc->yield(privmsg => $target => "quote -del <author> <phrase> ... | When removing, <author> and <phrase> must be EXACT");
     $main::irc->yield(privmsg => $target => "quote -undo | Undo the last quote command. Currently only supports undoing `add`");
