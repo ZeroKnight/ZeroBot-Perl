@@ -201,7 +201,7 @@ sub irc_public {
                                   $nick, $cmd{opt}{style}
                         );
                     } elsif (exists $cmd{opt}{del}) {
-                        if (exists $cmd{opt}{that}) {
+                        if (exists $cmd{opt}{last}) {
                             my %quote = quote_getlast();
                             if ($quote{lastcmd} ne 'del') {
                                 quote_del($channel, $nick, @{ $quote{lastquote} })
