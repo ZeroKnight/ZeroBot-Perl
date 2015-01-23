@@ -19,31 +19,18 @@ use ZeroBot::Module::BadCmd;
 # TODO: Implement inclusive filtering by pattern, author, submitter, etc
 sub quote_recite {
     my ($target, $sender, $author, $pattern, $submitter) = @_;
-    my ($style, $quote);
 
     # '*' is syntactic sugar for '.*' in quote command (only if alone)
     $author = '.' if !$author or $author eq '*';
     $pattern = '.' if !$pattern or $pattern eq '*';
+
     my @ary = $main::dbh->selectrow_array(q{
         SELECT * FROM quotes
         WHERE author REGEXP ? AND phrase REGEXP ?
         ORDER BY RANDOM() LIMIT 1;
     }, undef, ("(?i:$author)", "(?i:$pattern)"));
-    given ($ary[5]) {
-        when (0) {
-            $style = '';
-            $quote = $ary[0];
-        } when (1) {
-            $style = "<$ary[1]>";
-            $quote = join(' ', $style, $ary[0]);
-        } when (2) {
-            $style = "* $ary[1]";
-            $quote = join(' ', $style, $ary[0]);
-        } when (3) {
-            $style = "- $ary[1]";
-            $quote = join(' ', '"'.$ary[0].'"', $style);
-        }
-    }
+
+    my $quote = format_quote($ary[1], $ary[0], $ary[5]);
     $main::irc->yield(privmsg => $target => $quote);
     quote_setlast('recite', $ary[1], $ary[0]);
 }
@@ -51,24 +38,13 @@ sub quote_recite {
 sub quote_add {
     my ($target, $sender, $author, $phrase, $submitter, $style) = @_;
 
-    my $quote;
     $style = 1 if !defined $style;
     my $rows = $main::dbh->do(q{
         INSERT INTO quotes (phrase, author, submitter, style, date, time)
         VALUES (?, ?, ?, ?, ?, ?)
     }, undef, ($phrase, $author, $submitter, $style, strftime("%F", localtime), strftime("%T", localtime)));
 
-    given ($style) {
-        when (0) {
-            $quote = "$phrase";
-        } when (1) {
-            $quote = "<$author> $phrase";
-        } when (2) {
-            $quote = "* $author $phrase";
-        } when (3) {
-            $quote = "\"$phrase\" - $author";
-        }
-    }
+    my $quote = format_quote($author, $phrase, $style);
     $main::irc->yield(privmsg => $target => "$sender: Okay, adding: $quote");
     quote_setlast('add', $author, $phrase);
 }
@@ -76,7 +52,6 @@ sub quote_add {
 sub quote_del {
     my ($target, $sender, $author, $phrase) = @_;
 
-    my ($style, $quote);
     my @ary = $main::dbh->selectrow_array(q{
         SELECT * FROM quotes
         WHERE author=? AND phrase=?
@@ -150,6 +125,28 @@ sub quote_getlast {
     my $heap = $session->get_heap();
 
     return %{ $heap->{quote} }
+}
+
+sub format_quote {
+    my ($author, $phrase, $style) = @_;
+    my $quote; # End result
+
+    foreach ($style) {
+        when (0) { # No formatting
+            $style = '';
+            $quote = $phrase;
+        } when (1) { # Default formatting (IRC Style)
+            $style = "<$author>";
+            $quote = join(' ', $style, $phrase);
+        } when (2) { # ACTION formatting
+            $style = "* $author";
+            $quote = join(' ', $style, $phrase);
+        } when (3) { # "Elegant" formatting
+            $style = "- $author";
+            $quote = join(' ', '"'.$phrase.'"', $style);
+        }
+    }
+    return $quote;
 }
 
 1;
