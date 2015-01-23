@@ -190,18 +190,29 @@ sub irc_public {
                 } when ('raw') {
                     puppet_raw($nick, "@cmdarg");
                 } when ('quote') {
-                    if (exists $cmd{opt}{add} or exists $cmd{opt}{del}) {
+                    compress_arg(0, \@cmdarg) if $cmdarg[0] =~ /^"/;
+                    if (exists $cmd{opt}{add}) {
                         if (@cmdarg < 2) {
                             badcmd($channel);
                             return;
                         }
-                        compress_arg(0, \@cmdarg) if $cmdarg[0] =~ /^"/;
-                        if (exists $cmd{opt}{add}) {
-                            quote_add($channel, $nick, $cmdarg[0],
-                                      "@cmdarg[1 .. $#cmdarg]",
-                                      $nick, $cmd{opt}{style}
-                            );
-                        } elsif (exists $cmd{opt}{del}) {
+                        quote_add($channel, $nick, $cmdarg[0],
+                                  "@cmdarg[1 .. $#cmdarg]",
+                                  $nick, $cmd{opt}{style}
+                        );
+                    } elsif (exists $cmd{opt}{del}) {
+                        if (exists $cmd{opt}{that}) {
+                            my %quote = quote_getlast();
+                            if ($quote{lastcmd} ne 'del') {
+                                quote_del($channel, $nick, @{ $quote{lastquote} })
+                            } else {
+                                badcmd($channel);
+                            }
+                        } else {
+                            if (@cmdarg < 2) {
+                                badcmd($channel);
+                                return;
+                            }
                             quote_del($channel, $nick, $cmdarg[0],
                                       "@cmdarg[1 .. $#cmdarg]"
                             );
