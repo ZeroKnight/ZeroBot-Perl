@@ -374,6 +374,10 @@ sub parse_command {
             if ($parse_opts and $arg =~ /^!\w+/) {
                 # Command Name
                 $cmdhash{name} = $arg =~ tr/!//dr;
+            } elsif ($parse_opts and $arg =~ /^--/) {
+                # Marker to stop processing options and
+                # treat everything else as arguments
+                $parse_opts = 0;
             } elsif ($parse_opts and $arg =~ /^-\w+=/) {
                 # Option with value
                 $arg =~ tr/-//d;
