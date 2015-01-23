@@ -407,9 +407,11 @@ sub compress_arg {
     # TODO: add this and parse_command to ZeroBot::Util; croak if $args is not a reference
     my ($start, $args) = @_;
 
-    my $index = $start;
-    $index++ until $args->[$index] =~ /"$/;
-    splice @$args, $start, $index+1, "@$args[$start .. $index]";
+    unless (@$args == 1) {
+        my $index = $start;
+        $index++ until $args->[$index] =~ /"$/;
+        splice @$args, $start, $index+1, "@$args[$start .. $index]";
+    }
     $args->[$start] =~ tr/"//d;
 }
 
