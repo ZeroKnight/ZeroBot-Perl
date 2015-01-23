@@ -190,7 +190,7 @@ sub irc_public {
                 } when ('raw') {
                     puppet_raw($nick, "@cmdarg");
                 } when ('quote') {
-                    compress_arg(0, \@cmdarg) if $cmdarg[0] =~ /^"/;
+                    compress_arg(0, \@cmdarg) if $cmdarg[0] and $cmdarg[0] =~ /^"/;
                     if (exists $cmd{opt}{add}) {
                         if (@cmdarg < 2) {
                             badcmd($channel);
