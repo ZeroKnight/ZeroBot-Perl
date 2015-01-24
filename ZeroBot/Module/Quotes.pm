@@ -79,7 +79,7 @@ sub quote_help {
     $main::irc->yield(notice => $target => "   0: Only the quote itself is shown, no other formatting is applied. WYSIWYG.");
     $main::irc->yield(notice => $target => "   1: The author is prefixed to the quote. Ex: <foo> bar!");
     $main::irc->yield(notice => $target => "   2: Quote will be displayed as an ACTION. Ex: * foo bars about");
-    $main::irc->yield(notice => $target => "   3: Elegant style. The quote is wrapped in '\"' and the author is appended to the quote following a hyphen. Ex: \"Bar.\" - foo");
+    $main::irc->yield(notice => $target => "   3: Elegant style. The quote is wrapped in '\"' and the author is appended to the quote following an em-dash. Ex: \"Bar.\" —foo");
 }
 
 sub quote_undo {
@@ -129,7 +129,7 @@ sub format_quote {
             $style = "* $author";
             $quote = join(' ', $style, $phrase);
         } when (3) { # "Elegant" formatting
-            $style = "— $author";
+            $style = "—$author";
             $quote = join(' ', '"'.$phrase.'"', $style);
         }
     }
