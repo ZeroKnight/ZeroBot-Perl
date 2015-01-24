@@ -60,21 +60,8 @@ sub quote_del {
         DELETE FROM quotes
         WHERE author=? AND phrase=?
     }, undef, ($author, $phrase));
-    given ($ary[5]) {
-        when (0) {
-            $style = '';
-            $quote = $ary[0];
-        } when (1) {
-            $style = "<$ary[1]>";
-            $quote = join(' ', $style, $ary[0]);
-        } when (2) {
-            $style = "* $ary[1]";
-            $quote = join(' ', $style, $ary[0]);
-        } when (3) {
-            $style = "- $ary[1]";
-            $quote = join(' ', '"'.$ary[0].'"', $style);
-        }
-    }
+
+    my $quote = format_quote($ary[1], $ary[0], $ary[5]);
     $main::irc->yield(privmsg => $target => "$sender: Okay, removing: $quote");
     quote_setlast('del', $ary[1], $ary[0]);
 }
