@@ -82,17 +82,17 @@ sub quote_del {
 sub quote_help {
     my $target = shift;
 
-    $main::irc->yield(privmsg => $target => "quote [author] [pattern] | Both arguments are perl-regex patterns. A lone '*' is equivalent to '.*' (match anything). If unspecified, '*' is implied.");
-    $main::irc->yield(privmsg => $target => "quote -add [-style=<style>] <author> <phrase> ...");
-    $main::irc->yield(privmsg => $target => "quote -del <author> <phrase> | When removing, <author> and <phrase> must be EXACT");
-    $main::irc->yield(privmsg => $target => "quote -del -last | Will remove the last added OR recited quote");
-    $main::irc->yield(privmsg => $target => "quote -undo | Undo the last quote command. Currently only supports undoing `add`");
-    $main::irc->yield(privmsg => $target => "If <author> is more than one word, surround it in double quotes (\"). Ex: !quote -add \"foo bar\" foo!");
-    $main::irc->yield(privmsg => $target => "`style` defines how the quote should be displayed, and can be any of the following (1 is implicit default):");
-    $main::irc->yield(privmsg => $target => "   0: Only the quote itself is shown, no other formatting is applied. WYSIWYG.");
-    $main::irc->yield(privmsg => $target => "   1: The author is prefixed to the quote. Ex: <foo> bar!");
-    $main::irc->yield(privmsg => $target => "   2: Quote will be displayed as an ACTION. Ex: * foo bars about");
-    $main::irc->yield(privmsg => $target => "   3: Elegant style. The quote is wrapped in '\"' and the author is appended to the quote following a hyphen. Ex: \"Bar.\" - foo");
+    $main::irc->yield(notice => $target => "quote [author] [pattern] | Both arguments are perl-regex patterns. A lone '*' is equivalent to '.*' (match anything). If unspecified, '*' is implied.");
+    $main::irc->yield(notice => $target => "quote -add [-style=<style>] <author> <phrase> ...");
+    $main::irc->yield(notice => $target => "quote -del <author> <phrase> | When removing, <author> and <phrase> must be EXACT");
+    $main::irc->yield(notice => $target => "quote -del -last | Will remove the last added OR recited quote");
+    $main::irc->yield(notice => $target => "quote -undo | Undo the last quote command. Currently only supports undoing `add`");
+    $main::irc->yield(notice => $target => "If <author> is more than one word, surround it in double quotes (\"). Ex: !quote -add \"foo bar\" foo!");
+    $main::irc->yield(notice => $target => "`style` defines how the quote should be displayed, and can be any of the following (1 is implicit default):");
+    $main::irc->yield(notice => $target => "   0: Only the quote itself is shown, no other formatting is applied. WYSIWYG.");
+    $main::irc->yield(notice => $target => "   1: The author is prefixed to the quote. Ex: <foo> bar!");
+    $main::irc->yield(notice => $target => "   2: Quote will be displayed as an ACTION. Ex: * foo bars about");
+    $main::irc->yield(notice => $target => "   3: Elegant style. The quote is wrapped in '\"' and the author is appended to the quote following a hyphen. Ex: \"Bar.\" - foo");
 }
 
 sub quote_undo {
