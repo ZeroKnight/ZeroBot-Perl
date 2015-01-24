@@ -142,7 +142,7 @@ sub format_quote {
             $style = "* $author";
             $quote = join(' ', $style, $phrase);
         } when (3) { # "Elegant" formatting
-            $style = "- $author";
+            $style = "— $author";
             $quote = join(' ', '"'.$phrase.'"', $style);
         }
     }
