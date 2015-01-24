@@ -38,7 +38,7 @@ sub quote_recite {
 sub quote_add {
     my ($target, $sender, $author, $phrase, $submitter, $style) = @_;
 
-    $style = 1 if !defined $style;
+    $style = 1 unless defined $style;
     my $rows = $main::dbh->do(q{
         INSERT INTO quotes (phrase, author, submitter, style, date, time)
         VALUES (?, ?, ?, ?, ?, ?)
