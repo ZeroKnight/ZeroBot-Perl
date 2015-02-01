@@ -221,6 +221,8 @@ sub irc_public {
                         quote_help($nick);
                     } elsif (exists $cmd{opt}{undo}) {
                         quote_undo($channel, $nick);
+                    } elsif (exists $cmd{opt}{count}) {
+                        quote_count($channel, $nick);
                     } else {
                         quote_recite($channel, $nick, $cmdarg[0], "@cmdarg[1 .. $#cmdarg]")
                     }

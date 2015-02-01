@@ -8,7 +8,15 @@ use warnings;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(quote_recite quote_add quote_del quote_help quote_undo quote_getlast);
+our @EXPORT = qw(
+    quote_recite
+    quote_add
+    quote_del
+    quote_help
+    quote_undo
+    quote_count
+    quote_getlast
+);
 
 my $module_name = 'Quotes';
 
@@ -97,6 +105,16 @@ sub quote_undo {
             badcmd($target);
         }
     }
+}
+
+sub quote_count {
+    my ($target, $sender) = @_;
+
+    my $aref = $main::dbh->selectall_arrayref('SELECT * FROM quotes');
+    my $count = @$aref;
+    $main::irc->yield(privmsg => $target =>
+        "$sender: I know a whole $count quote" . ($count > 1 ? 's!' : '!')
+    )
 }
 
 sub quote_setlast {
