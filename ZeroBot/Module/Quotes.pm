@@ -14,6 +14,7 @@ our @EXPORT = qw(
     quote_del
     quote_help
     quote_undo
+    quote_edit
     quote_count
     quote_getlast
 );
@@ -24,7 +25,8 @@ use POE;
 use POSIX qw(strftime);
 use ZeroBot::Module::BadCmd;
 
-# TODO: Implement inclusive filtering by pattern, author, submitter, etc
+# NOTE: make use of dbh->last_insert_id
+
 sub quote_recite {
     my ($target, $sender, $author, $pattern, $submitter) = @_;
 
@@ -74,6 +76,38 @@ sub quote_del {
     quote_setlast('del', $ary[1], $ary[0]);
 }
 
+sub quote_edit {
+    my ($target, $sender, $author, $phrase,
+        $author_edit, $phrase_edit, $style) = @_;
+
+    my @pre = $main::dbh->selectrow_array(q{
+        SELECT * FROM quotes
+        WHERE author=? AND phrase=?
+    }, undef, ($author, $phrase));
+
+    $style = $pre[5] unless defined $style;
+
+    my $rows = $main::dbh->do(q{
+        UPDATE quotes
+        SET author=?, phrase=?, style=?
+        WHERE author=? AND phrase=?
+    }, undef, ($author_edit, $phrase_edit, $style, $author, $phrase));
+
+    my @post = $main::dbh->selectrow_array(q{
+        SELECT * FROM quotes
+        WHERE author=? AND phrase=?
+    }, undef, ($author_edit, $phrase_edit));
+
+    my $quote = format_quote($author, $phrase, $pre[5]);
+    my $quote_edit = format_quote($author_edit, $phrase_edit, $post[5]);
+
+    # TODO: colorized diff output?
+    $main::irc->yield(privmsg => $target => "*OLD*: $quote");
+    $main::irc->yield(privmsg => $target => "*NEW*: $quote_edit");
+    quote_setlast('edit', $author_edit, $phrase_edit, $author, $phrase);
+}
+
+# TODO: Colorize output
 sub quote_help {
     my $target = shift;
 
@@ -96,11 +130,15 @@ sub quote_undo {
     my $heap = $session->get_heap();
     my $lastcmd = $heap->{quote}{lastcmd};
     my @lastquote = @{ $heap->{quote}{lastquote} };
+    my @lastedit = @{ $heap->{quote}{lastedit} };
 
     foreach ($lastcmd) {
         when ('add') { # Remove last added quote
             quote_del($target, $sender, $lastquote[0], $lastquote[1]);
-            quote_setlast('del', @lastquote);
+        } when ('edit') { # Revert last edit
+            quote_edit($target, $sender, $lastquote[0], $lastquote[1],
+                       $lastedit[0], $lastedit[1]
+            );
         } default {
             badcmd($target);
         }
@@ -114,7 +152,7 @@ sub quote_count {
     my $count = @$aref;
     $main::irc->yield(privmsg => $target =>
         "$sender: I know a whole $count quote" . ($count > 1 ? 's!' : '!')
-    )
+    );
 }
 
 sub quote_setlast {
@@ -122,14 +160,15 @@ sub quote_setlast {
     my $heap = $session->get_heap();
 
     $heap->{quote}{lastcmd} = shift;
-    @{ $heap->{quote}{lastquote} } = @_;
+    @{ $heap->{quote}{lastquote} } = (shift, shift);
+    @{ $heap->{quote}{lastedit} } = @_ if @_;
 }
 
 sub quote_getlast {
     my $session = $poe_kernel->get_active_session();
     my $heap = $session->get_heap();
 
-    return %{ $heap->{quote} }
+    return %{ $heap->{quote} };
 }
 
 sub format_quote {

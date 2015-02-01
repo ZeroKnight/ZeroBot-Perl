@@ -94,6 +94,7 @@ POE::Session->create(
         quote => {
             lastcmd => undef,
             lastquote => [ undef, undef ],
+            lastedit => [ undef, undef ],
         },
     },
 );
@@ -190,6 +191,7 @@ sub irc_public {
                 } when ('raw') {
                     puppet_raw($nick, "@cmdarg");
                 } when ('quote') {
+                    my %lquote = quote_getlast();
                     compress_arg(0, \@cmdarg) if $cmdarg[0] and $cmdarg[0] =~ /^"/;
                     if (exists $cmd{opt}{add}) {
                         if (@cmdarg < 2) {
@@ -202,9 +204,8 @@ sub irc_public {
                         );
                     } elsif (exists $cmd{opt}{del}) {
                         if (exists $cmd{opt}{last}) {
-                            my %quote = quote_getlast();
-                            if ($quote{lastcmd} ne 'del') {
-                                quote_del($channel, $nick, @{ $quote{lastquote} })
+                            if ($lquote{lastcmd} ne 'del') {
+                                quote_del($channel, $nick, @{ $lquote{lastquote} });
                             } else {
                                 badcmd($channel);
                             }
@@ -221,6 +222,25 @@ sub irc_public {
                         quote_help($nick);
                     } elsif (exists $cmd{opt}{undo}) {
                         quote_undo($channel, $nick);
+                    } elsif (exists $cmd{opt}{edit}) {
+                        if (exists $cmd{opt}{last}) {
+                            if ($lquote{lastcmd} ne 'del') {
+                                if (@cmdarg < 2) {
+                                    badcmd($channel);
+                                    return;
+                                }
+                                quote_edit($channel, $nick, @{ $lquote{lastquote} },
+                                           $cmdarg[0], "@cmdarg[1 .. $#cmdarg]",
+                                           $cmd{opt}{style}
+                                );
+                            } else {
+                                badcmd($channel);
+                            }
+                        } else {
+                            $irc->yield(privmsg => $channel =>
+                                "$nick: Not implemented yet. Use -last"
+                            );
+                        }
                     } elsif (exists $cmd{opt}{count}) {
                         quote_count($channel, $nick);
                     } else {
