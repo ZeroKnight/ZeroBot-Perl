@@ -115,6 +115,7 @@ sub quote_help {
     $main::irc->yield(notice => $target => "quote -add [-style=<style>] <author> <phrase> ...");
     $main::irc->yield(notice => $target => "quote -del <author> <phrase> | When removing, <author> and <phrase> must be EXACT");
     $main::irc->yield(notice => $target => "quote -del -last | Will remove the last added OR recited quote");
+    $main::irc->yield(notice => $target => "quote -edit -last <new author> <new phrase> | Will edit the last added OR recited quote");
     $main::irc->yield(notice => $target => "quote -undo | Undo the last quote command. Currently only supports undoing `add`");
     $main::irc->yield(notice => $target => "If <author> is more than one word, surround it in double quotes (\"). Ex: !quote -add \"foo bar\" foo!");
     $main::irc->yield(notice => $target => "`style` defines how the quote should be displayed, and can be any of the following (1 is implicit default):");
