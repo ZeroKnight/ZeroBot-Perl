@@ -242,7 +242,7 @@ sub irc_public {
                             );
                         }
                     } elsif (exists $cmd{opt}{count}) {
-                        quote_count($channel, $nick);
+                        quote_count($channel, $nick, $cmdarg[0]);
                     } else {
                         quote_recite($channel, $nick, $cmdarg[0], "@cmdarg[1 .. $#cmdarg]")
                     }

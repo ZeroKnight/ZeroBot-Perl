@@ -147,13 +147,22 @@ sub quote_undo {
 }
 
 sub quote_count {
-    my ($target, $sender) = @_;
+    my ($target, $sender, $author) = @_;
 
-    my $aref = $main::dbh->selectall_arrayref('SELECT * FROM quotes');
+    $author = '.' if !$author or $author eq '*';
+    my $aref = $main::dbh->selectall_arrayref(q{
+        SELECT * FROM quotes
+        WHERE author REGEXP ?
+    }, undef, $author);
     my $count = @$aref;
-    $main::irc->yield(privmsg => $target =>
-        "$sender: I know a whole $count quote" . ($count > 1 ? 's!' : '!')
-    );
+
+    my $msg = "$sender: ";
+    if ($author eq '.') {
+        $msg = $msg . "I know a whole $count quote" . ($count > 1 ? 's!' : '!');
+    } else {
+        $msg = $msg . "$author has $count quote" . ($count > 1 ? 's!' : '!');
+    }
+    $main::irc->yield(privmsg => $target => $msg);
 }
 
 sub quote_setlast {
