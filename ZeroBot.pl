@@ -150,6 +150,11 @@ sub irc_public {
     foreach ($what) {
         when ($nick eq 'xxen0nxx') {
             trollxeno($channel);
+        } when ("$me: t is for?") {
+            # XXX: dirty hack in until I clean Question.pm
+            $irc->yield(privmsg => $channel =>
+                "$nick: z is for b | b is for v | v is for c | c is for p | p is for t | t is for t"
+            );
         } when (/^$cmdprefix/) {
             my %cmd = parse_command($what);
             my @cmdarg = @{ $cmd{arg} }; # shortcut
