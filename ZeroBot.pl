@@ -21,6 +21,7 @@ use ZeroBot::Module::NumGuess;
 use ZeroBot::Module::Puppet;
 use ZeroBot::Module::Quotes;
 use ZeroBot::Module::BabelBaba;
+use ZeroBot::Module::Dot;
 
 # TODO: make randomization a bit better and remember last used phrase for all
 # tables, then skip it if it comes up again back-to-back
@@ -150,6 +151,8 @@ sub irc_public {
     foreach ($what) {
         when ($nick eq 'xxen0nxx') {
             trollxeno($channel);
+        } when (is_dots($what)) {
+            dots_respond($channel, $what);
         } when ("$me: t is for?") {
             # XXX: dirty hack in until I clean Question.pm
             $irc->yield(privmsg => $channel =>
