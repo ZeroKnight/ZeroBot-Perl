@@ -1,9 +1,10 @@
 package ZeroBot::Core;
 
-# FIXME
-#BEGIN { $ZeroBot::Core::VERSION = '0.1'; }
+# Probably not right, but there doesn't seem to be a consensus on the proper way
+# to do module versions...
+our $VERSION = '0.1';
 
-use 5.014; # keys hashref
+use 5.014; # hashref: keys values
 use Moose;
 use Carp;
 use Math::Random::MT;
@@ -35,8 +36,7 @@ has 'User' => (
 has 'Gecos' => (
     is      => 'rw',
     isa     => 'Str',
-    #default => "ZeroBot v$VERSION",
-    default => "ZeroBot v0.1", # FIXME
+    default => "ZeroBot v$VERSION",
 );
 
 has 'Networks' => (
@@ -65,13 +65,13 @@ has 'Database' => (
 
 has '_dbh' => (
     is      => 'rw',
-    #isa     => 'DBI',
+    isa     => 'DBI::db',
     init_arg => undef,
 );
 
 has '_ircobj' => (
     is       => 'rw',
-    #isa      => 'POE::Component::IRC::State',
+    isa      => 'POE::Component::IRC::State',
     init_arg => undef,
 );
 
