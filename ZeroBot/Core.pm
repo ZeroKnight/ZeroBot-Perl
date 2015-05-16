@@ -7,6 +7,7 @@ our $VERSION = '0.1';
 use 5.014; # hashref: keys values
 use Moose;
 use Carp;
+use Try::Tiny;
 use Math::Random::MT;
 use Encode qw(encode);
 use Storable qw(dclone);
@@ -172,9 +173,7 @@ sub load {
     }
 
     my $file = "Modules/$module.pm";
-    #try { require $file } catch { croak "Failed to load module '$module': $_"; };
-    #try { require $file } catch { croak "Failed to load module '$module'"; };
-    require $file;
+    try { require $file } catch { croak "Failed to load module '$module': $_"; };
 
     my $m = "Modules::$module"->new(Bot => $self);
     $self->Modules->{$module} = $m;
@@ -201,7 +200,7 @@ sub _start {
     # NOTE: Can register signals here (eg. DIE)
 
     # TODO: Use POE::Component::IRC::Plugin::Proxy for our connection to allow
-    # for seamless restarts andn on-the-fly changes
+    # for seamless restarts and on-the-fly changes
 
     # NOTE: Set an alias?
     $self->_ircobj(POE::Component::IRC::State->spawn());
