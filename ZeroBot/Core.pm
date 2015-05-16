@@ -164,8 +164,6 @@ sub load {
     my $self = shift;
     my $module = shift;
 
-    $module =~ s/.*:://g;
-
     # Check whether module is already loaded
     if ($self->Modules->{$module}) {
         carp "Module '$module' already loaded";
@@ -187,6 +185,7 @@ sub _autoload_modules {
     my $self = shift;
 
     foreach my $module (_available_modules()) {
+        $module =~ s/.*:://g;
         $self->load($module);
     }
 }
