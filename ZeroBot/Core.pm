@@ -11,6 +11,7 @@ use Try::Tiny;
 use Math::Random::MT;
 use Encode qw(encode);
 use Storable qw(dclone);
+use Text::Wrap ();
 use DBI;
 use YAML::XS qw(LoadFile DumpFile);
 use IRC::Utils qw(decode_irc);
@@ -190,6 +191,65 @@ sub _autoload_modules {
     }
 }
 
+sub speak {
+    my $self = shift;
+    my ($msgtype, $target, $body) = @_;
+
+    unless ($msgtype eq 'privmsg' or $msgtype eq 'notice') {
+        carp "speak: Message type must be either 'privmsg' or 'notice'";
+        return;
+    }
+
+    # Make sure we have a destination and something to send
+    if (!defined $target or !defined $body) {
+        carp "speak: Can't send a " . uc($msgtype) . ' without a target and body';
+        return;
+    }
+
+    # Figure out how long our message body can be
+    my $maxlen = 510 - ((length $msgtype . $target) + 3); # 2 spaces and a colon
+
+    # Split up long messages if needed
+    if (length $body > $maxlen) {
+        local $Text::Wrap::columns = $maxlen;
+        #local $Text::Wrap::unexpand = 0; # no tabs
+        my @wrapped = split /\n+/, Text::Wrap::wrap('', '', $body);
+
+        foreach my $chunk (@wrapped) {
+            $self->_ircobj->yield($msgtype => $target => "$chunk");
+        }
+    } else {
+        $self->_ircobj->yield($msgtype => $target => "$body");
+    }
+}
+
+sub privmsg {
+    my $self = shift;
+    my ($target, $msg) = @_;
+
+    $self->speak(privmsg => $target => "$msg");
+}
+
+sub notice {
+    my $self = shift;
+    my ($target, $msg) = @_;
+
+    $self->speak(notice => $target => "$msg");
+}
+
+sub emote {
+    my $self = shift;
+    my ($target, $action) = @_;
+
+    # Make sure we have a destination and something to send
+    if (!defined $target or !defined $action) {
+        carp "emote: Can't send an action without a target and body";
+        return;
+    }
+
+    $self->_ircobj->yield(ctcp => $target => "ACTION $action");
+}
+
 ###############################
 ### PoCo-IRC Callbacks
 ###############################
@@ -251,6 +311,15 @@ sub irc_433 {
 }
 
 sub irc_public {
+    my ($self, $who, $where, $what) = @_[OBJECT, ARG0 .. ARG2];
+    my $irc = $self->_ircobj;
+    my $nick = (split /!/, $who)[0];
+    my $channel = $where->[0];
+
+    foreach my $module (values $self->Modules) {
+        next unless $module->can('said');
+        $module->said($channel, $nick, $what);
+    }
     return;
 }
 
