@@ -265,8 +265,10 @@ sub speak {
         return;
     }
 
-    # Figure out how long our message body can be
-    my $maxlen = 510 - ((length $msgtype . $target) + 3); # 2 spaces and a colon
+    # Figure out how long our message body can be. 512 characters maximum for
+    # messages, with 2 always being the CR-LF pair, the command and destination,
+    # and the 2 spaces and single colon separating the arguments
+    my $maxlen = 510 - ((length $msgtype . $target) + 3);
 
     # Split up long messages if needed
     if (length $body > $maxlen) {
@@ -333,7 +335,7 @@ sub _start {
     $self->_ircobj->yield(register => 'all');
 
     # ...and connect!
-    say 'Connecting to ', 'wazu.info.tm', 'on port ', 6667; # XXX: temp
+    say 'Connecting to ', 'wazu.info.tm', ' on port ', 6667; # XXX: temp
     $self->_ircobj->yield(connect => {
         Nick     => $self->Nick,
         Username => $self->User,
