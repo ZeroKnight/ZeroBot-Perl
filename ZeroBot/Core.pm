@@ -360,6 +360,11 @@ sub irc_001 {
         say "Joining '$channel'";
         $self->_ircobj->yield(join => $channel);
     }
+
+    foreach my $module (values $self->Modules) {
+        next unless $module->can('connected');
+        $module->connected();
+    }
 }
 
 sub irc_433 {
