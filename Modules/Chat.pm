@@ -14,6 +14,28 @@ my $config = LoadFile('config/Chat.yaml');
 my @chat_tables = (qw/joingreet mention question/);
 my @question_triggers = @{ $config->{Question}{triggers} };
 
+sub commanded {
+    my $self = shift;
+    my ($where, $who, $cmd) = @_;
+    my @arg = @{ $cmd->{arg} };
+    my $target;
+
+    return unless grep { $_ eq $cmd->{name} } qw(say do raw);
+
+    if (grep { $_ eq $cmd->{name} } qw(say do)) {
+        if (exists $cmd->{opt}{to}) {
+            $target = $cmd->{opt}{to};
+        } else {
+            $target = $where eq $self->Bot->Nick ? $who : $where;
+        }
+        $self->puppet($cmd->{name} => $target => "@arg");
+    } elsif ($cmd->{name} eq 'raw') {
+        $self->puppet_raw("@arg");
+    }
+    print "Puppet: $who => $cmd->{name}",
+        (defined $target ? "=> $target" : ''), ": \"@arg\"\n";
+}
+
 sub joined {
     my $self = shift;
     my ($who, $channel) = @_;
@@ -101,6 +123,26 @@ sub respond_question {
     } else {
         $self->privmsg($where => "$ary[0]");
     }
+}
+
+sub puppet {
+    my $self = shift;
+    my ($type, $target, $msg) = @_;
+
+    if ($type eq 'say') {
+        $self->privmsg($target => "$msg");
+    } elsif ($type eq 'do') {
+        $self->emote($target => "$msg");
+    } else {
+        warn "puppet(): \$type must be either 'say' or 'do'";
+    }
+}
+
+sub puppet_raw {
+    my $self = shift;
+    my $rawline = shift;
+
+    $self->Bot->_ircobj->yield(quote => $rawline);
 }
 
 sub add_phrase {

@@ -59,6 +59,7 @@ sub nick      { undef }
 sub mode      { undef }
 sub said      { undef }
 sub emoted    { undef }
+sub commanded { undef }
 #sub tick     { undef }
 #sub help     { }
 

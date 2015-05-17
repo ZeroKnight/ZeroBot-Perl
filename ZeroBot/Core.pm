@@ -4,7 +4,7 @@ package ZeroBot::Core;
 # to do module versions...
 our $VERSION = '0.1';
 
-use 5.014; # hashref: keys values
+use 5.014; # hashref: keys values; push on scalars
 use Moose;
 use Carp;
 use Try::Tiny;
@@ -46,7 +46,7 @@ has 'Networks' => (
     isa => 'HashRef',
 );
 
-has 'Cmdchar' => (
+has 'CmdChar' => (
     is  => 'rw',
     #isa => subtype('Str' => where { length == 1 }),
     isa => 'Str',
@@ -74,6 +74,12 @@ has '_dbh' => (
 has '_ircobj' => (
     is       => 'rw',
     isa      => 'POE::Component::IRC::State',
+    init_arg => undef,
+);
+
+has '_cmdhash' => (
+    is  => 'rw',
+    isa => 'HashRef',
     init_arg => undef,
 );
 
@@ -189,6 +195,59 @@ sub _autoload_modules {
         $module =~ s/.*:://g;
         $self->load($module);
     }
+}
+
+sub _parse_command {
+    my $self = shift;
+    my ($lastarg, $need_optval, @opt, @val);
+    my $parse_opts = 1;
+    my $cmdhash = {
+        name => undef,
+        opt => {},
+        arg => []
+    };
+
+    foreach my $arg (split /\s+/, shift) {
+        if ($need_optval) {
+            if ($arg =~ /"$/) { # End of value; add to hash
+                push @val, $arg =~ tr/"//dr;
+                $cmdhash->{opt}{$opt[0]} = join(' ', @val);
+                $need_optval = 0;
+                @opt = (); @val = ();
+            } else { # Still part of value
+                push @val, $arg;
+            }
+        } else {
+            my $cmdchar = $self->CmdChar;
+            if ($parse_opts and $arg =~ /^$cmdchar\w+/) {
+                # Command Name
+                $cmdhash->{name} = eval "\$arg =~ tr/$cmdchar//dr";
+            } elsif ($parse_opts and $arg =~ /^--/) {
+                # Marker to stop processing options and
+                # treat everything else as arguments
+                $parse_opts = 0;
+            } elsif ($parse_opts and $arg =~ /^-\w+=/) {
+                # Option with value
+                $arg =~ tr/-//d;
+                @opt = split('=', $arg);
+                if ($opt[1] =~ /^"/) { # Value consists of multiple args
+                    push @val, $opt[1] =~ tr/"//dr;
+                    $need_optval = 1;
+                } else {
+                    $cmdhash->{opt}{$opt[0]} = $opt[1];
+                }
+            } elsif ($parse_opts and $arg =~ /^-\w+/) {
+                # Option with no value
+                $arg =~ tr/-//d;
+                $cmdhash->{opt}{$arg} = undef;
+            } else {
+                # We've hit arguments, stop parsing options (and name)
+                $parse_opts = 0 if $parse_opts;
+                push $cmdhash->{arg}, $arg;
+            }
+        }
+    }
+    $self->_cmdhash($cmdhash);
 }
 
 sub speak {
@@ -315,12 +374,21 @@ sub irc_public {
     my $irc = $self->_ircobj;
     my $nick = (split /!/, $who)[0];
     my $channel = $where->[0];
+    my $cmdchar = $self->CmdChar;
 
-    foreach my $module (values $self->Modules) {
-        next unless $module->can('said');
-        $module->said($channel, $nick, $what);
+    # Are we being issued a command?
+    if ($what =~ /^$cmdchar/) {
+        $self->_parse_command($what);
+        foreach my $module (values $self->Modules) {
+            next unless $module->can('commanded');
+            $module->commanded($channel, $nick, $self->_cmdhash);
+        }
+    } else {
+        foreach my $module (values $self->Modules) {
+            next unless $module->can('said');
+            $module->said($channel, $nick, $what);
+        }
     }
-    return;
 }
 
 sub irc_msg {
