@@ -419,9 +419,12 @@ sub irc_join {
     my $irc = $self->_ircobj;
     my $nick = (split /!/, $who)[0];
 
-    # XXX: Get our Hostname (PoCoIRC should have a function for this...)
-    # TODO: Update this when our hostname changes (vhost, etc)
-    $self->Hostname((split /@/, $who)[1]) if $nick eq $self->Nick;
+    # XXX: Get our User/Hostname (PoCoIRC should have a function for this...)
+    # TODO: Update this when our user/hostname changes (vhost, etc)
+    if ($nick eq $self->Nick) {
+        $self->Username((split /!/, $who)[1]); # in case the server mangled it
+        $self->Hostname((split /@/, $who)[1]);
+    }
 
     foreach my $module (values $self->Modules) {
         next unless $module->can('joined');
