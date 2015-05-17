@@ -41,6 +41,12 @@ has 'Gecos' => (
     default => "ZeroBot v$VERSION",
 );
 
+has 'Hostname' => (
+    is       => 'rw',
+    isa      => 'Str',
+    init_arg => undef,
+);
+
 has 'Networks' => (
     is  => 'rw',
     isa => 'HashRef',
@@ -78,14 +84,14 @@ has '_ircobj' => (
 );
 
 has '_cmdhash' => (
-    is  => 'rw',
-    isa => 'HashRef',
+    is       => 'rw',
+    isa      => 'HashRef',
     init_arg => undef,
 );
 
 has 'Modules' => (
-    is  => 'rw',
-    isa => 'HashRef',
+    is      => 'rw',
+    isa     => 'HashRef',
     default => sub { {} },
     #builder => '_autoload_modules',
 );
@@ -266,9 +272,10 @@ sub speak {
     }
 
     # Figure out how long our message body can be. 512 characters maximum for
-    # messages, with 2 always being the CR-LF pair, the command and destination,
-    # and the 2 spaces and single colon separating the arguments
-    my $maxlen = 510 - ((length $msgtype . $target) + 3);
+    # messages, with 2 always being the CR-LF pair; the prefix, command and
+    # destination, and the 3 spaces and 2 colons separating the arguments
+    my $msg = ":$self->Bot->Nick!$self->Bot->Username\@$self->Bot->Hostname $msgtype $target :";
+    my $maxlen = 510 - (length $msg);
 
     # Split up long messages if needed
     if (length $body > $maxlen) {
@@ -337,13 +344,14 @@ sub _start {
     # ...and connect!
     say 'Connecting to ', 'wazu.info.tm', ' on port ', 6667; # XXX: temp
     $self->_ircobj->yield(connect => {
-        Nick     => $self->Nick,
-        Username => $self->User,
-        Ircname  => $self->Gecos,
-        Server   => 'wazu.info.tm', # XXX: temp
-        #Port     => $self->port,
-        #UseSSL   => $self->ssl,
-        Flood    => 1, # PoCoIRC's Anti-Flood is overcautious
+        Nick       => $self->Nick,
+        Username   => $self->User,
+        Ircname    => $self->Gecos,
+        Server     => 'wazu.info.tm', # XXX: temp
+        #Port       => $self->port,
+        #UseSSL     => $self->ssl,
+        Flood      => 1, # PoCoIRC's Anti-Flood is overcautious
+        msg_length => 512,
     });
 
     return;
@@ -410,6 +418,10 @@ sub irc_join {
     my ($self, $who, $where) = @_[OBJECT, ARG0, ARG1];
     my $irc = $self->_ircobj;
     my $nick = (split /!/, $who)[0];
+
+    # XXX: Get our Hostname (PoCoIRC should have a function for this...)
+    # TODO: Update this when our hostname changes (vhost, etc)
+    $self->Hostname((split /@/, $who)[1]) if $nick eq $self->Nick;
 
     foreach my $module (values $self->Modules) {
         next unless $module->can('joined');
