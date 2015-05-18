@@ -256,6 +256,21 @@ sub _parse_command {
     $self->_cmdhash($cmdhash);
 }
 
+sub _compress_arg {
+    # Compress quoted args into one. Takes an array reference
+    my $self = shift;
+    my ($start, $args) = @_;
+
+    return unless ref $args eq 'ARRAY';
+
+    unless (@$args == 1) {
+        my $index = $start;
+        $index++ until $args->[$index] =~ /"$/;
+        splice @$args, $start, $index+1, "@$args[$start .. $index]";
+    }
+    $args->[$start] =~ tr/"//d;
+}
+
 sub speak {
     my $self = shift;
     my ($msgtype, $target, $body) = @_;
@@ -316,6 +331,26 @@ sub emote {
     }
 
     $self->_ircobj->yield(ctcp => $target => "ACTION $action");
+}
+
+sub joinchan {
+    my $self = shift;
+    my ($channel, $key) = @_;
+
+    $self->_ircobj->yield(join => $channel => "$key");
+}
+
+sub kick {
+    my $self = shift;
+    my ($channel, $who, $reason) = @_;
+
+    $self->_ircobj->yield(kick => $channel => $who => "$reason");
+}
+
+sub ischop {
+    my $self = shift;
+
+    return $self->_ircobj->is_channel_operator(shift);
 }
 
 ###############################

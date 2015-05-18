@@ -48,6 +48,26 @@ sub emote {
     $self->Bot->emote($target, $action);
 }
 
+sub joinchan {
+    my $self = shift;
+    my ($channel, $key) = @_;
+
+    $self->Bot->join($channel, $key);
+}
+
+sub kick {
+    my $self = shift;
+    my ($channel, $who, $reason) = @_;
+
+    $self->Bot->kick($channel, $who, $reason);
+}
+
+sub ischop {
+    my $self = shift;
+
+    $self->Bot->ischop(shift);
+}
+
 #sub init     { undef }
 sub connected { undef }
 sub joined    { undef }
