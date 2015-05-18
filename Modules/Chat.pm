@@ -11,8 +11,11 @@ our $Author      = 'ZeroKnight';
 our $Description = 'Allows ZeroBot to chat and respond to conversation in various ways';
 
 my $config = LoadFile('config/Chat.yaml');
-my @chat_tables = (qw/joingreet mention question/);
+my @chat_tables = (qw/joingreet mention question trollxeno/);
 my @question_triggers = @{ $config->{Question}{triggers} };
+my @trollxeno_nicks = @{ $config->{TrollXeno}{nicks} };
+# \xa1 and \xbf are the inverted variants of ! and ?
+my @dotchars = ('.', '!', '?', "\x{a1}", "\x{bf}");
 
 sub commanded {
     my $self = shift;
@@ -48,6 +51,32 @@ sub said {
     my ($where, $who, $what) = @_;
     my $me = $self->Bot->Nick;
 
+    # TrollXeno: Spew hatred whenever a particular annoying lifeform spews
+    # textual diarrhea
+    if (grep { $_ eq $who } @trollxeno_nicks and
+      $config->{TrollXeno}{trolling}) {
+        if (int(rand($config->{TrollXeno}{chance}) + 1) == 1) {
+            $self->trollxeno($where);
+            return;
+        }
+    }
+
+    if (grep { $_ eq $who } qw(Wazubaba ZeroKnight)) {
+        if ($what =~ /^t is for(\?*|\.{1,}\??| t)$/) {
+            $self->privmsg($where, 'z is for b | b is for v | v is for c | c is for p | p is for t | t is for t');
+        }
+    }
+
+    # Dots...!
+    my $dotsregex = '^\s*[' . join('', @dotchars) . ']+\s*$';
+    if ($what =~ /$dotsregex/) {
+        # Do not use '.' as a possible output
+        my $char = int(rand(@dotchars - 1)) + 1;
+        $self->privmsg($where => "$what" . $dotchars[$char]);
+        return;
+    }
+
+    # Answer Questions
     # FIXME: this needs a (non-hacky) solution for '$me' in the yaml...
     foreach my $pattern (@question_triggers) {
         $pattern =~ s/\\\$me/$me/g; # XXX
@@ -61,6 +90,7 @@ sub said {
         }
     }
 
+    # Respond to being mentioned...strangely
     if ($what =~ /$me/) { # NOTE: Needs to be LOW priority
         $self->respond($where);
         return;
@@ -143,6 +173,23 @@ sub puppet_raw {
     my $rawline = shift;
 
     $self->Bot->_ircobj->yield(quote => $rawline);
+}
+
+# TODO: Flood protection; perhaps clever use of alarm()?
+sub trollxeno {
+    my $self = shift;
+    my $target = shift;
+    my $dbh = $self->Bot->_dbh;
+
+    my @ary = $dbh->selectrow_array(q{
+        SELECT * FROM trollxeno
+        ORDER BY RANDOM() LIMIT 1
+    });
+    if ($ary[1]) {
+        $self->emote($target => "$ary[0]");
+    } else {
+        $self->privmsg($target => "$ary[0]");
+    }
 }
 
 sub add_phrase {
