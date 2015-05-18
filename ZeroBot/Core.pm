@@ -274,7 +274,7 @@ sub speak {
     # Figure out how long our message body can be. 512 characters maximum for
     # messages, with 2 always being the CR-LF pair; the prefix, command and
     # destination, and the 3 spaces and 2 colons separating the arguments
-    my $msg = ":$self->Bot->Nick!$self->Bot->Username\@$self->Bot->Hostname $msgtype $target :";
+    my $msg = ":$self->Bot->Nick!$self->Bot->User\@$self->Bot->Hostname $msgtype $target :";
     my $maxlen = 510 - (length $msg);
 
     # Split up long messages if needed
@@ -422,7 +422,7 @@ sub irc_join {
     # XXX: Get our User/Hostname (PoCoIRC should have a function for this...)
     # TODO: Update this when our user/hostname changes (vhost, etc)
     if ($nick eq $self->Nick) {
-        $self->Username((split /!/, $who)[1]); # in case the server mangled it
+        $self->User((split /!/, $who)[1]); # in case the server mangled it (freenode)
         $self->Hostname((split /@/, $who)[1]);
     }
 
