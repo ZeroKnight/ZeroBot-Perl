@@ -80,8 +80,8 @@ sub mode      { undef }
 sub said      { undef }
 sub emoted    { undef }
 sub commanded { undef }
+sub help      { return "There isn't any help for you here at all, I'm afraid." }
 #sub tick     { undef }
-#sub help     { }
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

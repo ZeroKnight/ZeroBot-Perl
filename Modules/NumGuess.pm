@@ -44,4 +44,10 @@ sub commanded {
     }
 }
 
+sub help {
+    return (
+        'guess <number> -- Attempt to guess the magic (natural) number.'
+    )
+}
+
 1;

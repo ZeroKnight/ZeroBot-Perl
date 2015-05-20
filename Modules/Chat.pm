@@ -97,6 +97,13 @@ sub said {
     }
 }
 
+sub help {
+    return (
+        'say|do [-to=target] <what> -- Make the Bot say or do something',
+        'raw <message> -- Send a raw IRC message to the server from the Bot'
+    )
+}
+
 sub greet {
     my $self = shift;
     my $channel = shift;

@@ -48,4 +48,10 @@ sub invalid {
     $self->privmsg($target => "$asker: $ary[0]");
 }
 
+sub help {
+    return (
+        '8ball <question>? -- Ask the Magic 8-Ball a question!'
+    )
+}
+
 1;

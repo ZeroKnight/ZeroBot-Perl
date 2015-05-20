@@ -52,4 +52,11 @@ sub encode {
     $self->privmsg($target => "$sender: $input ~> $digest");
 }
 
+sub help {
+    return (
+        'encode <algorithm> <what> -- Encode arbitrary input using an algorithm of your choice',
+        'encode -list -- Lists available algorithms'
+    )
+}
+
 1;
