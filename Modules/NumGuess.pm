@@ -21,6 +21,8 @@ sub commanded {
     my @arg = @{ $cmd->{arg} };
 
     return unless $cmd->{name} eq 'guess';
+    return if $where eq $self->Bot->Nick;
+
     if ($arg[0] !~ /\d+/) {
         # TODO: Randomize these phrases?
         $self->privmsg($where => "$who: Try a number...");

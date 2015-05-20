@@ -446,7 +446,46 @@ sub irc_public {
 }
 
 sub irc_msg {
-    return;
+    my ($self, $who, $where, $what) = @_[OBJECT, ARG0 .. ARG2];
+    my $irc = $self->_ircobj;
+    my $nick = (split /!/, $who)[0];
+    my $cmdchar = $self->CmdChar;
+
+    # Are we being issued a command?
+    if ($what =~ /^$cmdchar/) {
+        $self->_parse_command($what);
+        my @arg = @{ $self->_cmdhash->{arg} };
+
+        # Looking for help...
+        if ($self->_cmdhash->{name} eq 'help') {
+            my @modules = (keys $self->Modules);
+            unless ($arg[0]) {
+                $self->privmsg($nick =>
+                    "Specify a module to see help for. Loaded modules: @modules"
+                );
+                return;
+            }
+            if (grep {$_ eq $arg[0]} @modules) {
+                $self->notice($nick => $_) for $self->Modules->{$arg[0]}->help();
+                return;
+            } else {
+                $self->privmsg($nick =>
+                    "No module named '$arg[0]' is loaded. Loaded modules: @modules"
+                );
+                return;
+            }
+        } else { # Command issued
+            foreach my $module (values $self->Modules) {
+                next unless $module->can('commanded');
+                $module->commanded($where->[0], $nick, $self->_cmdhash);
+            }
+        }
+    } else { # No command, just chatter
+        foreach my $module (values $self->Modules) {
+            next unless $module->can('said');
+            $module->said($where->[0], $nick, $what);
+        }
+    }
 }
 
 sub irc_ctcp_action {

@@ -23,13 +23,15 @@ sub commanded {
     my @arg = @{ $cmd->{arg} };
 
     return unless $cmd->{name} eq 'encode';
+
+    my $target = $where eq $self->Bot->Nick ? $who : $where;
     if (exists $cmd->{opt}{list}) {
-        $self->privmsg($where,
+        $self->privmsg($target,
             "$who: I support the following algorithms: @algorithm_list"
         );
         return;
     }
-    $self->encode($where, $who, $arg[0], "@arg[1..$#arg]");
+    $self->encode($target, $who, $arg[0], "@arg[1..$#arg]");
 }
 
 sub encode {

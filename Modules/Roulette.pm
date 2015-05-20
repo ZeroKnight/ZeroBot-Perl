@@ -24,6 +24,7 @@ sub commanded {
     my @arg = @{ $cmd->{arg} };
 
     return unless $cmd->{name} eq 'roulette';
+    return if $where eq $self->Bot->Nick;
 
     if ($shot++ != $bullet) {
         $self->privmsg($where => "CLICK! Who's next?");

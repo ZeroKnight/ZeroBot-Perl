@@ -15,10 +15,12 @@ sub commanded {
     my @arg = @{ $cmd->{arg} };
 
     return unless $cmd->{name} eq '8ball';
+
+    my $target = $where eq $self->Bot->Nick ? $who : $where;
     if("@arg" =~ /\S+\?\s*$/) {
-        $self->answer($where, $who);
+        $self->answer($target, $who);
     } else {
-        $self->invalid($where, $who);
+        $self->invalid($target, $who);
     }
 }
 
