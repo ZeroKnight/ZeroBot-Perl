@@ -149,24 +149,6 @@ sub run {
                 irc_join
             ) ],
         ],
-        #heap => {
-            #irc => $irc,
-            #game => {
-                #roulette => {
-                    #bullet => int(rand(6)),
-                    #shot => 0,
-                #},
-                #numguess => {
-                    #magicnum => int(rand(100)) + 1,
-                    #guessnum => 0,
-                #}
-            #},
-            #quote => {
-                #lastcmd => undef,
-                #lastquote => [ undef, undef ],
-                #lastedit => [ undef, undef ],
-            #},
-        #},
     );
 
     $poe_kernel->run();
