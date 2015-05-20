@@ -147,6 +147,7 @@ sub run {
                 irc_msg
                 irc_ctcp_action
                 irc_join
+                irc_nick
             ) ],
         ],
     );
@@ -509,6 +510,12 @@ sub irc_join {
         $module->joined($nick, $where);
     }
     return;
+}
+
+sub irc_nick {
+    my ($self, $who, $newnick) = @_[OBJECT, ARG0, ARG1];
+
+    $self->Nick($newnick) if (split /!/, $who)[0] eq $self->Nick;
 }
 
 sub _default {
