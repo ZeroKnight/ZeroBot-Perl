@@ -166,8 +166,7 @@ sub run {
 }
 
 sub load {
-    my $self = shift;
-    my $module = shift;
+    my ($self, $module) = @_;
 
     # Check whether module is already loaded
     if ($self->Modules->{$module}) {
@@ -250,8 +249,7 @@ sub _parse_command {
 
 sub _compress_arg {
     # Compress quoted args into one. Takes an array reference
-    my $self = shift;
-    my ($start, $args) = @_;
+    my ($self, $start, $args) = @_;
 
     return unless ref $args eq 'ARRAY';
 
@@ -264,8 +262,7 @@ sub _compress_arg {
 }
 
 sub speak {
-    my $self = shift;
-    my ($msgtype, $target, $body) = @_;
+    my ($self, $msgtype, $target, $body) = @_;
 
     unless ($msgtype eq 'privmsg' or $msgtype eq 'notice') {
         carp "speak: Message type must be either 'privmsg' or 'notice'";
@@ -287,7 +284,6 @@ sub speak {
     # Split up long messages if needed
     if (length $body > $maxlen) {
         local $Text::Wrap::columns = $maxlen;
-        #local $Text::Wrap::unexpand = 0; # no tabs
         my @wrapped = split /\n+/, Text::Wrap::wrap('', '', $body);
 
         foreach my $chunk (@wrapped) {
@@ -299,22 +295,19 @@ sub speak {
 }
 
 sub privmsg {
-    my $self = shift;
-    my ($target, $msg) = @_;
+    my ($self, $target, $msg) = @_;
 
     $self->speak(privmsg => $target => "$msg");
 }
 
 sub notice {
-    my $self = shift;
-    my ($target, $msg) = @_;
+    my ($self, $target, $msg) = @_;
 
     $self->speak(notice => $target => "$msg");
 }
 
 sub emote {
-    my $self = shift;
-    my ($target, $action) = @_;
+    my ($self, $target, $action) = @_;
 
     # Make sure we have a destination and something to send
     if (!defined $target or !defined $action) {
@@ -326,15 +319,13 @@ sub emote {
 }
 
 sub joinchan {
-    my $self = shift;
-    my ($channel, $key) = @_;
+    my ($self, $channel, $key) = @_;
 
     $self->_ircobj->yield(join => $channel => "$key");
 }
 
 sub kick {
-    my $self = shift;
-    my ($channel, $who, $reason) = @_;
+    my ($self, $channel, $who, $reason) = @_;
 
     $self->_ircobj->yield(kick => $channel => $who => "$reason");
 }
