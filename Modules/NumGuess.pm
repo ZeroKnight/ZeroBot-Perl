@@ -16,33 +16,32 @@ my $magicnum   = int(rand($guessrange)) + 1;
 my $guessnum   = 0;
 
 sub commanded {
-    my $self = shift;
-    my ($where, $who, $cmd) = @_;
+    my ($self, $msg, $cmd) = @_;
     my @arg = @{ $cmd->{arg} };
 
     return unless $cmd->{name} eq 'guess';
-    return if $where eq $self->Bot->Nick;
+    return if $msg->{where} !~ /^#/;
 
     if ($arg[0] !~ /\d+/) {
         # TODO: Randomize these phrases?
-        $self->privmsg($where => "$who: Try a number...");
+        $self->privmsg($msg->{where} => "$msg->{nick} Try a number...");
         return;
     }
 
     $guessnum++;
     if ($arg[0] == $magicnum) {
-        $self->privmsg($where =>
-            "DING! $who wins! It took a total of $guessnum guesses."
+        $self->privmsg($msg->{where} =>
+            "DING! $msg->{nick} wins! It took a total of $guessnum guesses."
         );
-        $self->privmsg($where =>
+        $self->privmsg($msg->{where} =>
             "I'm thinking of another number between 1-$guessrange. Can you guess it?"
         );
         $magicnum = int(rand($guessrange)) + 1;
         $guessnum = 0;
     } elsif ($arg[0] > $magicnum) {
-        $self->privmsg($where => "$who; Too high!");
+        $self->privmsg($msg->{where} => "$msg->{nick}; Too high!");
     } elsif ($arg[0] < $magicnum) {
-        $self->privmsg($where => "$who; Too low!");
+        $self->privmsg($msg->{where} => "$msg->{nick}; Too low!");
     }
 }
 

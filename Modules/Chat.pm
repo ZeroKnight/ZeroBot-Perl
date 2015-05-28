@@ -18,61 +18,54 @@ my @trollxeno_nicks = @{ $config->{TrollXeno}{nicks} };
 my @dotchars = ('.', '!', '?', "\x{a1}", "\x{bf}");
 
 sub commanded {
-    my $self = shift;
-    my ($where, $who, $cmd) = @_;
+    my ($self, $msg, $cmd) = @_;
     my @arg = @{ $cmd->{arg} };
     my $target;
 
     return unless grep { $_ eq $cmd->{name} } qw(say do raw);
 
     if (grep { $_ eq $cmd->{name} } qw(say do)) {
-        if (exists $cmd->{opt}{to}) {
-            $target = $cmd->{opt}{to};
-        } else {
-            $target = $where eq $self->Bot->Nick ? $who : $where;
-        }
+        $target = $cmd->{opt}{to} // $msg->{where};
         $self->puppet($cmd->{name} => $target => "@arg");
     } elsif ($cmd->{name} eq 'raw') {
         $self->puppet_raw("@arg");
     }
-    print "Puppet: $who => $cmd->{name}",
+    print "Puppet: $msg->{nick} => $cmd->{name}",
         (defined $target ? "=> $target" : ''), ": \"@arg\"\n";
 }
 
 sub joined {
-    my $self = shift;
-    my ($who, $channel) = @_;
+    my ($self, $who, $channel) = @_;
 
     $self->greet($channel) if $self->Bot->Nick eq $who;
 }
 
 sub said {
-    my $self = shift;
-    my ($where, $who, $what) = @_;
+    my ($self, $msg) = @_;
     my $me = $self->Bot->Nick;
 
     # TrollXeno: Spew hatred whenever a particular annoying lifeform spews
     # textual diarrhea
-    if (grep { $_ eq $who } @trollxeno_nicks and
+    if (grep { $_ eq $msg->{nick} } @trollxeno_nicks and
       $config->{TrollXeno}{trolling}) {
         if (int(rand($config->{TrollXeno}{chance}) + 1) == 1) {
-            $self->trollxeno($where);
+            $self->trollxeno($msg->{where});
             return;
         }
     }
 
-    if (grep { $_ eq $who } qw(Wazubaba ZeroKnight)) {
-        if ($what =~ /^t is for(\?*|\.{1,}\??| t)$/) {
-            $self->privmsg($where, 'z is for b | b is for v | v is for c | c is for p | p is for t | t is for t');
+    if (grep { $_ eq $msg->{nick} } qw(Wazubaba ZeroKnight)) {
+        if ($msg->{body} =~ /^t is for(\?*|\.{1,}\??| t)$/) {
+            $self->privmsg($msg->{where}, 'z is for b | b is for v | v is for c | c is for p | p is for t | t is for t');
         }
     }
 
     # Dots...!
     my $dotsregex = '^\s*[' . join('', @dotchars) . ']+\s*$';
-    if ($what =~ /$dotsregex/) {
+    if ($msg->{body} =~ /$dotsregex/) {
         # Do not use '.' as a possible output
         my $char = int(rand(@dotchars - 1)) + 1;
-        $self->privmsg($where => "$what" . $dotchars[$char]);
+        $self->privmsg($msg->{where} => "$msg->{body}" . $dotchars[$char]);
         return;
     }
 
@@ -80,33 +73,32 @@ sub said {
     # FIXME: this needs a (non-hacky) solution for '$me' in the yaml...
     foreach my $pattern (@question_triggers) {
         $pattern =~ s/\\\$me/$me/g; # XXX
-        if ($what =~ /$pattern/) {
-            if ($what =~ /would you kindly/i) {
-                $self->respond_question($where, $who, 1);
+        if ($msg->{body} =~ /$pattern/) {
+            if ($msg->{body} =~ /would you kindly/i) {
+                $self->respond_question($msg->{where}, $msg->{nick}, 1);
             } else {
-                $self->respond_question($where, $who);
+                $self->respond_question($msg->{where}, $msg->{nick});
             }
             return;
         }
     }
 
     # Respond to being mentioned...strangely
-    if ($what =~ /$me/) { # NOTE: Needs to be LOW priority
-        $self->respond($where);
+    if ($msg->{body} =~ /$me/) { # NOTE: Needs to be LOW priority
+        $self->respond($msg->{where});
         return;
     }
 }
 
 sub help {
     return (
-        'say|do [-to=target] <what> -- Make the Bot say or do something',
-        'raw <message> -- Send a raw IRC message to the server from the Bot'
+        'say|do [-to=target] <what> -- Make me say or do something',
+        'raw <message> -- Have me send a raw IRC message to the server (think QUOTE)'
     )
 }
 
 sub greet {
-    my $self = shift;
-    my $channel = shift;
+    my ($self, $channel) = @_;
     my $dbh = $self->Bot->_dbh;
 
     my @ary = $dbh->selectrow_array(q{
@@ -121,8 +113,7 @@ sub greet {
 }
 
 sub respond {
-    my $self = shift;
-    my $who = shift;
+    my ($self, $who) = @_;
     my $dbh = $self->Bot->_dbh;
 
     my @ary = $dbh->selectrow_array(q{
@@ -140,8 +131,7 @@ sub respond_question {
 # $bias is the answer type to be biased toward. Values are identical to their
 # mapped value in the DB. 0 = Negative, 1 = Positive, 2 = Indifferent
 # If $bias is undef, normal behavior occurs
-    my $self = shift;
-    my ($where, $who, $bias) = @_;
+    my ($self, $where, $who, $bias) = @_;
     my $atype = int(rand(3));
     my $dbh = $self->Bot->_dbh;
 
@@ -163,8 +153,7 @@ sub respond_question {
 }
 
 sub puppet {
-    my $self = shift;
-    my ($type, $target, $msg) = @_;
+    my ($self, $type, $target, $msg) = @_;
 
     if ($type eq 'say') {
         $self->privmsg($target => "$msg");
@@ -176,16 +165,14 @@ sub puppet {
 }
 
 sub puppet_raw {
-    my $self = shift;
-    my $rawline = shift;
+    my ($self, $rawline) = @_;
 
     $self->Bot->_ircobj->yield(quote => $rawline);
 }
 
 # TODO: Flood protection; perhaps clever use of alarm()?
 sub trollxeno {
-    my $self = shift;
-    my $target = shift;
+    my ($self, $target) = @_;
     my $dbh = $self->Bot->_dbh;
 
     my @ary = $dbh->selectrow_array(q{
@@ -200,8 +187,7 @@ sub trollxeno {
 }
 
 sub add_phrase {
-    my $self = shift;
-    my ($where, $who, $table, $phrase, $action) = @_;
+    my ($self, $where, $who, $table, $phrase, $action) = @_;
     my $dbh = $self->Bot->_dbh;
 
     unless (grep { $_ eq $table } @chat_tables) {

@@ -19,39 +19,45 @@ my $bullet           = int(rand(6));
 my $shot             = 0;
 
 sub commanded {
-    my $self = shift;
-    my ($where, $victim, $cmd) = @_;
+    my ($self, $msg, $cmd) = @_;
     my @arg = @{ $cmd->{arg} };
+    my $victim = $msg->{nick};
 
     return unless $cmd->{name} eq 'roulette';
-    return if $where eq $self->Bot->Nick;
+    return if $msg->{where} !~ /^#/;
 
     if ($shot++ != $bullet) {
-        $self->privmsg($where => "CLICK! Who's next?");
+        $self->privmsg($msg->{where} => "CLICK! Who's next?");
         return;
     } elsif ($scapegoating and $victim eq $master and
       int(rand($scapegoat_chance)) == 1) {
-        my @nicklist = grep { $_ ne $master } $self->Bot->_ircobj->channel_list($where);
+        my @nicklist = grep { $_ ne $master } $self->Bot->_ircobj->channel_list($msg->{where});
         my $scapegoat = $nicklist[int(rand(scalar @nicklist))];
-        $self->privmsg($where =>
+        $self->privmsg($msg->{where} =>
             "$victim pulls the trigger, but the bullet somehow misses and hits $scapegoat instead!"
         );
         if ($scapegoat eq $self->Bot->Nick) {
-            if ($self->ischop($where)) {
-                $self->kick($where => $self->Bot->Nick => "BANG! Killed self.");
+            if ($self->ischop($msg->{where})) {
+                $self->kick($msg->{where} => $self->Bot->Nick => "BANG! Killed self.");
                 sleep 3;
-                $self->joinchan($where);
+                $self->joinchan($msg->{where});
             }
-            $self->emote($where => 'has been resurrected by forces unknown');
+            $self->emote($msg->{where} => 'has been resurrected by forces unknown');
         }
     } elsif ($kick and $self->ischop) {
-        $self->kick($where => $victim => "BANG! You died.");
+        $self->kick($msg->{where} => $victim => "BANG! You died.");
     } else {
-        $self->privmsg($where => "BANG! $victim died");
+        $self->privmsg($msg->{where} => "BANG! $victim died");
     }
-    $self->emote($where => 'loads a single round and spins the chamber');
+    $self->emote($msg->{where} => 'loads a single round and spins the chamber');
     $bullet = int(rand(6));
     $shot = 0;
+}
+
+sub help {
+    return (
+        'roulette -- Pull the trigger...'
+    )
 }
 
 1;

@@ -79,6 +79,7 @@ sub nick      { undef }
 sub mode      { undef }
 sub said      { undef }
 sub emoted    { undef }
+sub noticed   { undef }
 sub commanded { undef }
 sub help      { return "There isn't any help for you here at all, I'm afraid." }
 #sub tick     { undef }

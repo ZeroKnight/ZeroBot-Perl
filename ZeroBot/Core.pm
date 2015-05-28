@@ -137,19 +137,28 @@ sub run {
     # Create a session and assign callbacks to handle the IRC messages/events
     POE::Session->create(
         object_states => [
-            $self => [ qw(
-                _default
-                _start
-                _stop
-                irc_001
-                irc_433
-                irc_public
-                irc_msg
-                irc_ctcp_action
-                irc_join
-                irc_nick
-            ) ],
+            $self => {
+                _default        => 'irc_default',
+                _start          => 'irc_start',
+                _stop           => 'irc_stop',
+
+                irc_connected   => 'irc_connected',
+                irc_001         => 'irc_welcome',
+                irc_433         => 'irc_nickname_in_use',
+                irc_error       => 'irc_error',
+
+                irc_join        => 'irc_join',
+                irc_nick        => 'irc_nick',
+            },
         ],
+        # Inline because this way we don't need 4 identical subs, or a bunch of
+        # helper subs feeding to irc_spoke
+        inline_states => {
+            irc_public      => sub { $self->irc_spoke('channel', @_) },
+            irc_msg         => sub { $self->irc_spoke('msg', @_) },
+            irc_notice      => sub { $self->irc_spoke('notice', @_) },
+            irc_ctcp_action => sub { $self->irc_spoke('action', @_) },
+        },
     );
 
     $poe_kernel->run();
@@ -340,7 +349,7 @@ sub ischop {
 ### PoCo-IRC Callbacks
 ###############################
 
-sub _start {
+sub irc_start {
     my ($self, $kernel, $session) = @_[OBJECT, KERNEL, SESSION];
     # NOTE: Can register signals here (eg. DIE)
 
@@ -375,11 +384,15 @@ sub _start {
     return;
 }
 
-sub irc_001 {
-    # RPL_WELCOME
-    my $self = $_[OBJECT];
+sub irc_connected {
+    my ($self, $server) = @_[OBJECT, ARG0];
 
-    say 'Successfully connected to ', $self->_ircobj->server_name();
+    say 'Successfully connected to ', $server;
+}
+
+sub irc_welcome {
+    # 001 RPL_WELCOME
+    my $self = $_[OBJECT];
 
     # XXX: temp
     foreach my $channel (@{$self->Networks->{wazuhome}{Channels}}) {
@@ -393,8 +406,8 @@ sub irc_001 {
     }
 }
 
-sub irc_433 {
-    # ERR_NICKNAMEINUSE
+sub irc_nickname_in_use {
+    # 443 ERR_NICKNAMEINUSE
     my $self = $_[OBJECT];
 
     say "Nick: '" . $self->Nick . "' already in use.";
@@ -402,15 +415,24 @@ sub irc_433 {
     $self->_ircobj->yield(nick => $self->Nick);
 }
 
-sub irc_public {
-    my ($self, $who, $where, $what) = @_[OBJECT, ARG0 .. ARG2];
-    my $irc = $self->_ircobj;
-    my $nick = (split /!/, $who)[0];
-    my $channel = $where->[0];
+sub irc_spoke {
+    # Handles PRIVMSGs, NOTICEs and ACTIONs
+    my ($self, $msgtype) = (shift, shift);
+    my ($who, $where, $what) = @_[ARG0 .. ARG2];
+    my ($nick, $user, $host) = (split /[!@]/, $who);
     my $cmdchar = $self->CmdChar;
 
+    # Store message info
+    my $msg = {
+        nick  => $nick,
+        user  => $user,
+        host  => $host,
+        where => $msgtype eq 'msg' ? $nick : $where->[0],
+        body  => $what,
+    };
+
     # Are we being issued a command?
-    if ($what =~ /^$cmdchar/) {
+    if ($msgtype ne 'action' and $what =~ /^$cmdchar/) {
         $self->_parse_command($what);
         my @arg = @{ $self->_cmdhash->{arg} };
 
@@ -418,50 +440,8 @@ sub irc_public {
         if ($self->_cmdhash->{name} eq 'help') {
             my @modules = (keys $self->Modules);
             unless ($arg[0]) {
-                $self->privmsg($channel =>
-                    "$nick: Specify a module to see help for. Loaded modules: @modules"
-                );
-                return;
-            }
-            if (grep {$_ eq $arg[0]} @modules) {
-                $self->notice($nick => $_) for $self->Modules->{$arg[0]}->help();
-                return;
-            } else {
-                $self->privmsg($channel =>
-                    "$nick: No module named '$arg[0]' is loaded. Loaded modules: @modules"
-                );
-                return;
-            }
-        } else { # Command issued
-            foreach my $module (values $self->Modules) {
-                next unless $module->can('commanded');
-                $module->commanded($channel, $nick, $self->_cmdhash);
-            }
-        }
-    } else { # No command, just chatter
-        foreach my $module (values $self->Modules) {
-            next unless $module->can('said');
-            $module->said($channel, $nick, $what);
-        }
-    }
-}
-
-sub irc_msg {
-    my ($self, $who, $where, $what) = @_[OBJECT, ARG0 .. ARG2];
-    my $irc = $self->_ircobj;
-    my $nick = (split /!/, $who)[0];
-    my $cmdchar = $self->CmdChar;
-
-    # Are we being issued a command?
-    if ($what =~ /^$cmdchar/) {
-        $self->_parse_command($what);
-        my @arg = @{ $self->_cmdhash->{arg} };
-
-        # Looking for help...
-        if ($self->_cmdhash->{name} eq 'help') {
-            my @modules = (keys $self->Modules);
-            unless ($arg[0]) {
-                $self->privmsg($nick =>
+                $self->privmsg($msg->{where} =>
+                    ($msgtype eq 'msg' ? '' : "$nick: ") .
                     "Specify a module to see help for. Loaded modules: @modules"
                 );
                 return;
@@ -470,7 +450,8 @@ sub irc_msg {
                 $self->notice($nick => $_) for $self->Modules->{$arg[0]}->help();
                 return;
             } else {
-                $self->privmsg($nick =>
+                $self->privmsg($msg->{where} =>
+                    ($msgtype eq 'msg' ? '' : "$nick: ") .
                     "No module named '$arg[0]' is loaded. Loaded modules: @modules"
                 );
                 return;
@@ -478,19 +459,23 @@ sub irc_msg {
         } else { # Command issued
             foreach my $module (values $self->Modules) {
                 next unless $module->can('commanded');
-                $module->commanded($where->[0], $nick, $self->_cmdhash);
+                $module->commanded($msg, $self->_cmdhash);
             }
         }
     } else { # No command, just chatter
         foreach my $module (values $self->Modules) {
-            next unless $module->can('said');
-            $module->said($where->[0], $nick, $what);
+            if ($msgtype eq 'channel' or $msgtype eq 'msg') {
+                next unless $module->can('said');
+                $module->said($msg);
+            } elsif ($msgtype eq 'action') {
+                next unless $module->can('emoted');
+                $module->emoted($msg);
+            } elsif ($msgtype eq 'notice') {
+                next unless $module->can('noticed');
+                $module->noticed($msg);
+            }
         }
     }
-}
-
-sub irc_ctcp_action {
-    return;
 }
 
 sub irc_join {
@@ -518,7 +503,7 @@ sub irc_nick {
     $self->Nick($newnick) if (split /!/, $who)[0] eq $self->Nick;
 }
 
-sub _default {
+sub irc_default {
     my ($event, $args) = @_[ARG0 .. $#_];
     my @output = ("$event: ");
 
@@ -534,7 +519,11 @@ sub _default {
     return;
 }
 
-sub _stop {
+sub irc_stop {
+    return;
+}
+
+sub irc_error {
     return;
 }
 

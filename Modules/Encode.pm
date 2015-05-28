@@ -18,25 +18,22 @@ our $Description = 'Encode strings using a variety of algorithms';
 my @algorithm_list = qw(rot13 md5 sha256 sha512 crc32 base64);
 
 sub commanded {
-    my $self = shift;
-    my ($where, $who, $cmd) = @_;
+    my ($self, $msg, $cmd) = @_;
     my @arg = @{ $cmd->{arg} };
 
     return unless $cmd->{name} eq 'encode';
 
-    my $target = $where eq $self->Bot->Nick ? $who : $where;
     if (exists $cmd->{opt}{list}) {
-        $self->privmsg($target,
-            "$who: I support the following algorithms: @algorithm_list"
+        $self->privmsg($msg->{where},
+            "$msg->{nick}: I support the following algorithms: @algorithm_list"
         );
         return;
     }
-    $self->encode($target, $who, $arg[0], "@arg[1..$#arg]");
+    $self->encode($msg->{where}, $msg->{nick}, $arg[0], "@arg[1..$#arg]");
 }
 
 sub encode {
-    my $self = shift;
-    my ($target, $sender, $algorithm, $input) = @_;
+    my ($self, $target, $sender, $algorithm, $input) = @_;
 
     # TODO: badcmd here
     return unless $input;

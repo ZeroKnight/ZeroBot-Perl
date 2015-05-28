@@ -10,23 +10,20 @@ our $Author = 'ZeroKnight';
 our $Description = 'Simulates the classic Magic 8-Ball toy';
 
 sub commanded {
-    my $self = shift;
-    my ($where, $who, $cmd) = @_;
+    my ($self, $msg, $cmd) = @_;
     my @arg = @{ $cmd->{arg} };
 
     return unless $cmd->{name} eq '8ball';
 
-    my $target = $where eq $self->Bot->Nick ? $who : $where;
     if("@arg" =~ /\S+\?\s*$/) {
-        $self->answer($target, $who);
+        $self->answer($msg->{where}, $msg->{nick});
     } else {
-        $self->invalid($target, $who);
+        $self->invalid($msg->{where}, $msg->{nick});
     }
 }
 
 sub answer {
-    my $self = shift;
-    my ($target, $asker) = @_;
+    my ($self, $target, $asker) = @_;
     my $dbh = $self->Bot->_dbh;
 
     my @ary = $dbh->selectrow_array(q{
@@ -38,8 +35,7 @@ sub answer {
 }
 
 sub invalid {
-    my $self = shift;
-    my ($target, $asker) = @_;
+    my ($self, $target, $asker) = @_;
     my $dbh = $self->Bot->_dbh;
 
     my @ary = $dbh->selectrow_array(q{
