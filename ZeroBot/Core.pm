@@ -287,23 +287,23 @@ sub speak {
         my @wrapped = split /\n+/, Text::Wrap::wrap('', '', $body);
 
         foreach my $chunk (@wrapped) {
-            $self->_ircobj->yield($msgtype => $target => "$chunk");
+            $self->_ircobj->yield($msgtype, $target, $chunk);
         }
     } else {
-        $self->_ircobj->yield($msgtype => $target => "$body");
+        $self->_ircobj->yield($msgtype, $target, $body);
     }
 }
 
 sub privmsg {
-    my ($self, $target, $msg) = @_;
+    my ($self, $target, $body) = @_;
 
-    $self->speak(privmsg => $target => "$msg");
+    $self->speak(privmsg => $target, $body);
 }
 
 sub notice {
-    my ($self, $target, $msg) = @_;
+    my ($self, $target, $body) = @_;
 
-    $self->speak(notice => $target => "$msg");
+    $self->speak(notice => $target, $body);
 }
 
 sub emote {
@@ -315,22 +315,28 @@ sub emote {
         return;
     }
 
-    $self->_ircobj->yield(ctcp => $target => "ACTION $action");
+    $self->_ircobj->yield(ctcp => $target, "ACTION $action");
+}
+
+sub reply {
+    my ($self, $target, $who, $body) = @_;
+
+    $self->privmsg($target, ($target ne $who ? "$who: " : '') . $body);
 }
 
 sub joinchan {
     my ($self, $channel, $key) = @_;
 
-    $self->_ircobj->yield(join => $channel => "$key");
+    $self->_ircobj->yield(join => $channel, $key);
 }
 
 sub kick {
     my ($self, $channel, $who, $reason) = @_;
 
-    $self->_ircobj->yield(kick => $channel => $who => "$reason");
+    $self->_ircobj->yield(kick => $channel, $who, $reason);
 }
 
-sub ischop {
+sub ischanop {
     my $self = shift;
 
     return $self->_ircobj->is_channel_operator(shift);

@@ -26,7 +26,7 @@ sub commanded {
 
     if (grep { $_ eq $cmd->{name} } qw(say do)) {
         $target = $cmd->{opt}{to} // $msg->{where};
-        $self->puppet($cmd->{name} => $target => "@arg");
+        $self->puppet($cmd->{name}, $target, "@arg");
     } elsif ($cmd->{name} eq 'raw') {
         $self->puppet_raw("@arg");
     }
@@ -106,9 +106,9 @@ sub greet {
         ORDER BY RANDOM() LIMIT 1
     });
     if ($ary[1]) {
-        $self->emote($channel => "$ary[0]");
+        $self->emote($channel, $ary[0]);
     } else {
-        $self->privmsg($channel => "$ary[0]");
+        $self->privmsg($channel, $ary[0]);
     }
 }
 
@@ -121,9 +121,9 @@ sub respond {
         ORDER BY RANDOM() LIMIT 1
     });
     if ($ary[1]) {
-        $self->emote($who => "$ary[0]");
+        $self->emote($who, $ary[0]);
     } else {
-        $self->privmsg($who => "$ary[0]");
+        $self->privmsg($who, $ary[0]);
     }
 }
 
@@ -142,13 +142,13 @@ sub respond_question {
 
     my @ary = $dbh->selectrow_array(q{
         SELECT * FROM question
-        WHERE agree=?
+        WHERE agree = ?
         ORDER BY RANDOM() LIMIT 1;
     }, undef, $atype);
     if ($ary[1]) {
-        $self->emote($where => "$ary[0]");
+        $self->emote($where, $ary[0]);
     } else {
-        $self->privmsg($where => "$ary[0]");
+        $self->privmsg($where, $ary[0]);
     }
 }
 
@@ -156,9 +156,9 @@ sub puppet {
     my ($self, $type, $target, $msg) = @_;
 
     if ($type eq 'say') {
-        $self->privmsg($target => "$msg");
+        $self->privmsg($target, $msg);
     } elsif ($type eq 'do') {
-        $self->emote($target => "$msg");
+        $self->emote($target, $msg);
     } else {
         warn "puppet(): \$type must be either 'say' or 'do'";
     }
@@ -180,9 +180,9 @@ sub trollxeno {
         ORDER BY RANDOM() LIMIT 1
     });
     if ($ary[1]) {
-        $self->emote($target => "$ary[0]");
+        $self->emote($target, $ary[0]);
     } else {
-        $self->privmsg($target => "$ary[0]");
+        $self->privmsg($target, $ary[0]);
     }
 }
 

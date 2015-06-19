@@ -24,7 +24,7 @@ sub commanded {
 
     if ($arg[0] !~ /\d+/) {
         # TODO: Randomize these phrases?
-        $self->privmsg($msg->{where} => "$msg->{nick} Try a number...");
+        $self->privmsg($msg->{where}, "$msg->{nick} Try a number...");
         return;
     }
 
@@ -39,9 +39,9 @@ sub commanded {
         $magicnum = int(rand($guessrange)) + 1;
         $guessnum = 0;
     } elsif ($arg[0] > $magicnum) {
-        $self->privmsg($msg->{where} => "$msg->{nick}; Too high!");
+        $self->privmsg($msg->{where}, "$msg->{nick}; Too high!");
     } elsif ($arg[0] < $magicnum) {
-        $self->privmsg($msg->{where} => "$msg->{nick}; Too low!");
+        $self->privmsg($msg->{where}, "$msg->{nick}; Too low!");
     }
 }
 

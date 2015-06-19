@@ -28,10 +28,10 @@ sub answer {
 
     my @ary = $dbh->selectrow_array(q{
         SELECT * FROM magic_8ball
-        WHERE refusal=0
+        WHERE refusal = 0
         ORDER BY RANDOM() LIMIT 1
     });
-    $self->privmsg($target => "$asker: $ary[0]");
+    $self->reply($target, $asker, $ary[0]);
 }
 
 sub invalid {
@@ -40,15 +40,15 @@ sub invalid {
 
     my @ary = $dbh->selectrow_array(q{
         SELECT * FROM magic_8ball
-        WHERE refusal=1
+        WHERE refusal = 1
         ORDER BY RANDOM() LIMIT 1
     });
-    $self->privmsg($target => "$asker: $ary[0]");
+    $self->reply($target, $asker, $ary[0]);
 }
 
 sub help {
     return (
-        '8ball <question>? -- Ask the Magic 8-Ball a question!'
+        '8ball <question> -- Ask the Magic 8-Ball a question!'
     )
 }
 

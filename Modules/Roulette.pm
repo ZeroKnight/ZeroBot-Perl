@@ -27,29 +27,29 @@ sub commanded {
     return if $msg->{where} !~ /^#/;
 
     if ($shot++ != $bullet) {
-        $self->privmsg($msg->{where} => "CLICK! Who's next?");
+        $self->privmsg($msg->{where}, "CLICK! Who's next?");
         return;
     } elsif ($scapegoating and $victim eq $master and
       int(rand($scapegoat_chance)) == 1) {
         my @nicklist = grep { $_ ne $master } $self->Bot->_ircobj->channel_list($msg->{where});
         my $scapegoat = $nicklist[int(rand(scalar @nicklist))];
-        $self->privmsg($msg->{where} =>
+        $self->privmsg($msg->{where},
             "$victim pulls the trigger, but the bullet somehow misses and hits $scapegoat instead!"
         );
         if ($scapegoat eq $self->Bot->Nick) {
-            if ($self->ischop($msg->{where})) {
-                $self->kick($msg->{where} => $self->Bot->Nick => "BANG! Killed self.");
+            if ($self->ischanop($msg->{where})) {
+                $self->kick($msg->{where}, $self->Bot->Nick, "BANG! Killed self.");
                 sleep 3;
                 $self->joinchan($msg->{where});
             }
-            $self->emote($msg->{where} => 'has been resurrected by forces unknown');
+            $self->emote($msg->{where}, 'has been resurrected by forces unknown');
         }
-    } elsif ($kick and $self->ischop) {
-        $self->kick($msg->{where} => $victim => "BANG! You died.");
+    } elsif ($kick and $self->ischanop) {
+        $self->kick($msg->{where}, $victim, "BANG! You died.");
     } else {
-        $self->privmsg($msg->{where} => "BANG! $victim died");
+        $self->privmsg($msg->{where}, "BANG! $victim died");
     }
-    $self->emote($msg->{where} => 'loads a single round and spins the chamber');
+    $self->emote($msg->{where}, 'loads a single round and spins the chamber');
     $bullet = int(rand(6));
     $shot = 0;
 }

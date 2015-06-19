@@ -15,58 +15,61 @@ has 'Bot' => (
     #builder => sub { $self->Bot->_dbh; },
 #);
 
-has ['Name', 'Author'] => (
-    is  => 'rw',
-    isa => 'Str',
-);
+###############################
+### Main Function Mirrors
+###############################
 
 sub speak {
-    my $self = shift;
-    my ($msgtype, $target, $body) = @_;
+    my ($self, $msgtype, $target, $body) = @_;
 
     $self->Bot->speak($msgtype, $target, $body);
 }
 
 sub privmsg {
-    my $self = shift;
-    my ($target, $body) = @_;
+    my ($self, $target, $body) = @_;
 
     $self->Bot->privmsg($target, $body);
 }
 
 sub notice {
-    my $self = shift;
-    my ($target, $body) = @_;
+    my ($self, $target, $body) = @_;
 
     $self->Bot->notice($target, $body);
 }
 
 sub emote {
-    my $self = shift;
-    my ($target, $action) = @_;
+    my ($self, $target, $action) = @_;
 
     $self->Bot->emote($target, $action);
 }
 
-sub joinchan {
-    my $self = shift;
-    my ($channel, $key) = @_;
+sub reply {
+    my ($self, $target, $who, $body) = @_;
 
-    $self->Bot->join($channel, $key);
+    $self->Bot->reply($target, $who, $body);
+}
+
+sub joinchan {
+    my ($self, $channel, $key) = @_;
+
+    $self->Bot->joinchan($channel, $key);
 }
 
 sub kick {
-    my $self = shift;
-    my ($channel, $who, $reason) = @_;
+    my ($self, $channel, $who, $reason) = @_;
 
     $self->Bot->kick($channel, $who, $reason);
 }
 
-sub ischop {
+sub ischanop {
     my $self = shift;
 
-    $self->Bot->ischop(shift);
+    $self->Bot->ischanop(shift);
 }
+
+###############################
+### Module Entry Calls
+###############################
 
 #sub init     { undef }
 sub connected { undef }

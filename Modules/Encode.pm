@@ -24,8 +24,8 @@ sub commanded {
     return unless $cmd->{name} eq 'encode';
 
     if (exists $cmd->{opt}{list}) {
-        $self->privmsg($msg->{where},
-            "$msg->{nick}: I support the following algorithms: @algorithm_list"
+        $self->reply($msg->{where}, $msg->{nick},
+            "I support the following algorithms: @algorithm_list"
         );
         return;
     }
@@ -48,7 +48,7 @@ sub encode {
         $digest = encode_base64($digest)    when 'base64';
         default { return } # TODO: badcmd here
     }
-    $self->privmsg($target => "$sender: $input ~> $digest");
+    $self->reply($target, $sender, "$input ~> $digest");
 }
 
 sub help {
