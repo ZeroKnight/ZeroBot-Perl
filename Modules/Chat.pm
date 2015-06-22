@@ -30,7 +30,7 @@ sub commanded {
     } elsif ($cmd->{name} eq 'raw') {
         $self->puppet_raw("@arg");
     }
-    print "Puppet: $msg->{nick} => $cmd->{name}",
+    print "Chat: $msg->{nick} => $cmd->{name}",
         (defined $target ? "=> $target" : ''), ": \"@arg\"\n";
 }
 
