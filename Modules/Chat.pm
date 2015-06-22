@@ -90,6 +90,36 @@ sub said {
     }
 }
 
+sub emoted {
+    my ($self, $msg) = @_;
+    my $me = $self->Bot->Nick;
+
+    # TrollXeno: Spew hatred whenever a particular annoying lifeform spews
+    # textual diarrhea
+    if (grep { $_ eq $msg->{nick} } @trollxeno_nicks and
+      $config->{TrollXeno}{trolling}) {
+        if (int(rand($config->{TrollXeno}{chance}) + 1) == 1) {
+            $self->trollxeno($msg->{where});
+            return;
+        }
+    }
+
+    # Dots...!
+    my $dotsregex = '^\s*[' . join('', @dotchars) . ']+\s*$';
+    if ($msg->{body} =~ /$dotsregex/) {
+        # Do not use '.' as a possible output
+        my $char = int(rand(@dotchars - 1)) + 1;
+        $self->privmsg($msg->{where} => "$msg->{body}" . $dotchars[$char]);
+        return;
+    }
+
+    # Respond to being mentioned...strangely
+    if ($msg->{body} =~ /$me/) { # NOTE: Needs to be LOW priority
+        $self->respond($msg->{where});
+        return;
+    }
+}
+
 sub help {
     return (
         'say|do [-to=target] <what> -- Make me say or do something',
