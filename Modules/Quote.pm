@@ -48,8 +48,10 @@ sub commanded {
 
 sub joined {
     my ($self, $who, $channel) = @_;
+    my @optout = @{ $config->{settings}{autooptout} };
 
     return if $who eq $self->Bot->Nick;
+    return if grep {$who eq $_} @optout;
 
     # Limit auto-recite on a per-user basis to once per configurable interval
     if (time > ($lastjoinquote{$who} || 0) + $config->{settings}{autolimit} * 60) {
