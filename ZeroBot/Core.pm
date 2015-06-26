@@ -471,9 +471,18 @@ sub irc_spoke {
                 return;
             }
         } else { # Command issued
+            my $rv;
             foreach my $module (values $self->Modules) {
                 next unless $module->can('commanded');
-                $module->commanded($msg, $self->_cmdhash);
+                $rv = $module->commanded($msg, $self->_cmdhash);
+                last if $rv;
+            }
+            unless ($rv) {
+                if (exists $self->Modules->{BadCmd}) {
+                    $self->Modules->{BadCmd}->badcmd($msg->{where});
+                } else {
+                    $self->reply($msg->{where}, $msg->{nick}, 'No such command.');
+                }
             }
         }
     } else { # No command, just chatter

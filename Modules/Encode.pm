@@ -27,16 +27,16 @@ sub commanded {
         $self->reply($msg->{where}, $msg->{nick},
             "I support the following algorithms: @algorithm_list"
         );
-        return;
+    } else {
+        return if @arg < 2;
+        $self->encode($msg->{where}, $msg->{nick}, $arg[0], "@arg[1..$#arg]");
     }
-    $self->encode($msg->{where}, $msg->{nick}, $arg[0], "@arg[1..$#arg]");
+
+    return 1;
 }
 
 sub encode {
     my ($self, $target, $sender, $algorithm, $input) = @_;
-
-    # TODO: badcmd here
-    return unless $input;
 
     my $digest = $input;
     foreach ($algorithm) {

@@ -23,6 +23,7 @@ sub commanded {
     my $target;
 
     return unless grep { $_ eq $cmd->{name} } qw(say do raw);
+    return unless @arg;
 
     if (grep { $_ eq $cmd->{name} } qw(say do)) {
         $target = $cmd->{opt}{to} // $msg->{where};
@@ -32,6 +33,8 @@ sub commanded {
     }
     print "Chat: $msg->{nick} => $cmd->{name}",
         (defined $target ? "=> $target" : ''), ": \"@arg\"\n";
+
+    return 1;
 }
 
 sub joined {

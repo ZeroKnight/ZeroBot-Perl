@@ -25,11 +25,11 @@ sub commanded {
     return unless $cmd->{name} eq 'quote';
     if (exists $cmd->{opt}{add}) {
         $self->Bot->_compress_arg(0, \@arg) if $arg[0] and $arg[0] =~ /^"/; # XXX
-        return if @arg < 2; # TODO: badcmd here
+        return if @arg < 2;
         $self->quote_add($msg->{where}, $msg->{nick}, $arg[0], "@arg[1..$#arg]", $cmd->{opt}{style});
     } elsif (exists $cmd->{opt}{del}) {
         $self->Bot->_compress_arg(0, \@arg) if $arg[0] and $arg[0] =~ /^"/; # XXX
-        return if @arg < 2; # TODO: badcmd here
+        return if @arg < 2;
         $self->quote_del($msg->{where}, $msg->{nick}, $arg[0], "@arg[1..$#arg]");
     } elsif (exists $cmd->{opt}{stats}) {
         if (exists $cmd->{opt}{owned}) {
