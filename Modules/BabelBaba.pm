@@ -53,13 +53,17 @@ sub is_nonsense {
         foreach my $regex (@$value) {
             if (ref $regex eq 'HASH') { # 'fuzzy' triggers
                 foreach my $fuzzy (@{$regex->{fuzzy}}) {
-                    $fuzzy =~ s/(.)/$1+/gs; # make it fuzzy ('foo' ~> 'f+o+o+')
-                    $fuzzy = "(?i)$fuzzy" if $key eq 'case-insensitive';
-                    return 1 if $what =~ /\b$fuzzy\b/;
+                    # Make it fuzzy ('foo' ~> 'f+o+o+')
+                    my $fregex = $fuzzy =~ s/(.)/$1+/gsr;
+                    $fregex = "(?i)$fregex" if $key eq 'case-insensitive';
+                    return 1 if $what =~ /\b$fregex\b/;
                 }
             } else {
-                $regex = "(?i)$regex" if $key eq 'case-insensitive';
-                return 1 if $what =~ /\b$regex\b/;
+                if ($key eq 'case-insensitive') {
+                    return 1 if $what =~ /\b$regex\b/i;
+                } else {
+                    return 1 if $what =~ /\b$regex\b/;
+                }
             }
         }
     }
