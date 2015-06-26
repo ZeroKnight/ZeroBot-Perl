@@ -44,6 +44,8 @@ sub commanded {
     } else {
         $self->quote_recite($msg->{where}, $arg[0], "@arg[1..$#arg]");
     }
+
+    return 1;
 }
 
 sub joined {
