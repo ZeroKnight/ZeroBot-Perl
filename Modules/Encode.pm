@@ -27,12 +27,11 @@ sub commanded {
         $self->reply($msg->{where}, $msg->{nick},
             "I support the following algorithms: @algorithm_list"
         );
+        return 1;
     } else {
         return if @arg < 2;
-        $self->encode($msg->{where}, $msg->{nick}, $arg[0], "@arg[1..$#arg]");
+        return $self->encode($msg->{where}, $msg->{nick}, $arg[0], "@arg[1..$#arg]");
     }
-
-    return 1;
 }
 
 sub encode {
@@ -46,9 +45,10 @@ sub encode {
         $digest = sha512_hex($digest)       when 'sha512';
         $digest = crc32_hex($digest)        when 'crc32';
         $digest = encode_base64($digest)    when 'base64';
-        default { return } # TODO: badcmd here
+        default { return 0 }
     }
     $self->reply($target, $sender, "$input ~> $digest");
+    return 1;
 }
 
 sub help {
