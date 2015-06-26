@@ -165,7 +165,7 @@ sub run {
     return;
 }
 
-sub load {
+sub module_load {
     my ($self, $module) = @_;
 
     # Check whether module is already loaded
@@ -181,17 +181,34 @@ sub load {
     $self->Modules->{$module} = $m;
 }
 
-sub reload { ... }
+sub module_reload { ... }
 
-sub unload { ... }
+sub module_unload { ... }
+
+sub module_list {
+    my ($self, $delim) = @_;
+    my @modules = keys $self->Modules;
+
+    @modules = join($delim, @modules) if defined $delim;
+    return @modules;
+}
+
+sub module_listall {
+    my ($self, $delim) = @_;
+    my @modules;
+
+    foreach my $module (_available_modules()) {
+        $module =~ s/.*:://g;
+        push @modules, $module;
+    }
+    @modules = join($delim, @modules) if defined $delim;
+    return @modules;
+}
 
 sub _autoload_modules {
     my $self = shift;
 
-    foreach my $module (_available_modules()) {
-        $module =~ s/.*:://g;
-        $self->load($module);
-    }
+    $self->module_load($_) for $self->module_listall;
 }
 
 sub _parse_command {
@@ -435,20 +452,20 @@ sub irc_spoke {
 
         # Looking for help...
         if ($self->_cmdhash->{name} eq 'help') {
-            my @modules = (keys $self->Modules);
+            my @modules = $self->module_list(', ');
             unless ($arg[0]) {
-                $self->privmsg($msg->{where} =>
-                    ($msgtype eq 'msg' ? '' : "$nick: ") .
+                $self->reply($msg->{where}, $msg->{nick},
                     "Specify a module to see help for. Loaded modules: @modules"
                 );
                 return;
             }
-            if (grep {$_ eq $arg[0]} @modules) {
-                $self->notice($nick => $_) for $self->Modules->{$arg[0]}->help();
+            # Is the requested module loaded?
+            my $search = (grep { $arg[0] =~ /$_/i } keys $self->Modules)[0];
+            if ($search) {
+                $self->notice($nick => $_) for $self->Modules->{$search}->help();
                 return;
             } else {
-                $self->privmsg($msg->{where} =>
-                    ($msgtype eq 'msg' ? '' : "$nick: ") .
+                $self->reply($msg->{where}, $msg->{nick},
                     "No module named '$arg[0]' is loaded. Loaded modules: @modules"
                 );
                 return;

@@ -68,6 +68,37 @@ sub ischanop {
 }
 
 ###############################
+### Module Tertiary Functions
+###############################
+
+sub module_isloaded {
+    my ($self, $module) = @_;
+
+    if (exists $self->Bot->Modules->{$module}) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+sub module_isavailable {
+    my ($self, $module) = @_;
+
+    if (grep { $_ eq $module } $self->Bot->module_listall) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+sub module_gethandle {
+    my ($self, $module) = @_;
+
+    return unless $self->module_isloaded($module);
+    return $self->Bot->Modules->{$module};
+}
+
+###############################
 ### Module Entry Calls
 ###############################
 
