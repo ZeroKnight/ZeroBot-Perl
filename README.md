@@ -1,6 +1,8 @@
 ZeroBot 
 =========
 
+[![Join the chat at https://gitter.im/ZeroKnight/ZeroBot](https://badges.gitter.im/ZeroKnight/ZeroBot.svg)](https://gitter.im/ZeroKnight/ZeroBot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 My personal, batshit insane IRC bot
 -------------------------------------
 
