@@ -1,19 +1,99 @@
 package ZeroBot::Module;
 
-use Moose;
+our $VERSION = '0.005';
+$VERSION = eval $VERSION;
+
+use ZeroBot::Common;
+
+my %constants;
+BEGIN { %constants = (
+  MODULE_EAT_NONE   => 1,
+  MODULE_EAT_CLIENT => 2,
+  MODULE_EAT_PLUGIN => 3,
+  MODULE_EAT_ALL    => 4
+)}
+use constant \%constants;
+
+use parent 'Exporter::Tiny';
+our @EXPORT = qw();
+our @EXPORT_OK = (
+  qw(module_register module_send_event),
+  keys %constants,
+);
+our %EXPORT_TAGS = (
+  consts => [keys %constants],
+);
+
+sub module_register
+{
+  my ($module, $syn_type, @events) = @_;
+  ZBCORE->plugin_register($module, $syn_type, @events);
+}
+
+sub module_send_event
+{
+  my ($event, @args) = @_;
+  ZBCORE->send_event($event, @args);
+}
+
+1;
+
+__END__
+#### OLD SHIT
+
+sub module_load {
+  my ($self, $module) = @_;
+
+  # Check whether module is already loaded
+  if ($self->Modules->{$module}) {
+    carp "Module '$module' already loaded";
+    return undef;
+  }
+
+  my $file = "Modules/$module.pm";
+  try { require $file } catch { croak "Failed to load module '$module': $_"; };
+
+  my $m = "Modules::$module"->new(Bot => $self);
+  $self->Modules->{$module} = $m;
+}
+
+sub module_reload { ... }
+
+sub module_unload { ... }
+
+sub module_list {
+  my ($self, $delim) = @_;
+  my @modules = keys $self->Modules;
+
+  @modules = join($delim, @modules) if defined $delim;
+  return @modules;
+}
+
+sub module_listall {
+  my ($self, $delim) = @_;
+  my @modules;
+
+  foreach my $module (_available_modules()) {
+    $module =~ s/.*:://g;
+    push @modules, $module;
+  }
+  @modules = join($delim, @modules) if defined $delim;
+  return @modules;
+}
+
+sub _autoload_modules {
+  my $self = shift;
+
+  $self->module_load($_) for $self->module_listall;
+}
+
+#### OLD SHIT ####
 
 has 'Bot' => (
     is  => 'ro',
     isa => 'ZeroBot::Core',
     required => 1,
 );
-
-#has 'DBH' => (
-    #is   => 'ro',
-    #isa  => 'DBI::db',
-    #lazy => 1,
-    #builder => sub { $self->Bot->_dbh; },
-#);
 
 ###############################
 ### Main Function Mirrors
@@ -117,6 +197,3 @@ sub noticed   { undef }
 sub commanded { undef }
 sub help      { return "There isn't any help for you here at all, I'm afraid." }
 #sub tick     { undef }
-
-no Moose;
-__PACKAGE__->meta->make_immutable;

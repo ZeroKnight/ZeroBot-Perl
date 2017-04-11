@@ -1,19 +1,24 @@
 #!/usr/bin/env perl
 
-use strict;
-use warnings;
-
+use strictures 2;
 use ZeroBot::Core;
+use POE;
 
-# All member values (excluding 'Config') defined in the constructor will
-# only be used as a fallback to values set in the config.
-my $bot = ZeroBot::Core->new();
+my $cfg = ZeroBot::Config->new(
+  # config_dir => 
+  # core_cfg_path => 
+  # plugins_cfg_path => 
+);
 
-#...
+my $bot = ZeroBot::Core->instance(
+  cfg => $cfg
+);
 
-$bot->run();
+$bot->init();
+$poe_kernel->run();
 
 
+__END__
 ####### OLD CODE FOR REFERENCE; WILL BE TRANSITIONED INTO NEW CODE
 
 
