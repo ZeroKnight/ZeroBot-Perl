@@ -95,7 +95,8 @@ sub _split_msg
 {
   my ($self, $msg) = @_;
   my @arr;
-  push @arr, substr($msg, 0, _msg_maxlen($msg), '') while length $msg;
+  my $maxlen = _msg_maxlen($msg);
+  push @arr, substr($msg, 0, $maxlen, '') while length $msg;
   return [@arr];
 }
 
