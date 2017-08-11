@@ -66,10 +66,7 @@ has core => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub {
-    my $self = shift;
-    $self->core_cfg->data->{Core};
-  },
+  builder  => sub { $_[0]->core_cfg->data->{Core}; },
 );
 
 # has plugins => (
@@ -83,10 +80,7 @@ has irc => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub {
-    my $self = shift;
-    $self->core_cfg->data->{IRC};
-  },
+  builder  => sub { $_[0]->core_cfg->data->{IRC}; },
 );
 
 sub BUILD

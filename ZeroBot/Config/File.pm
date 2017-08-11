@@ -24,10 +24,7 @@ has data => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub {
-    my $self = shift;
-    $self->read($self->filepath);
-  },
+  builder  => sub { $_[0]->read($_[0]->filepath); },
 );
 
 has filename => (
@@ -35,7 +32,7 @@ has filename => (
   isa      => Path,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { shift->filepath->basename },
+  builder  => sub { $_[0]->filepath->basename },
 );
 
 sub BUILD
