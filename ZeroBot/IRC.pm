@@ -250,20 +250,20 @@ sub irc_connected
 {
   my ($self, $heap, $server) = @_[OBJECT, HEAP, ARG0];
   my $network = $heap->{network};
-  my $name = $network->name;
+  my $netname = $network->name;
 
   # TODO: proper logging (debug? or info?)
-  CORE::say "[$name] Established connection to $server, now registering...";
+  CORE::say "[$netname] Established connection to $server, now registering...";
 }
 
 sub irc_disconnected
 {
   my ($self, $heap, $server) = @_[OBJECT, HEAP, ARG0];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $name = $network->name;
+  my $netname = $network->name;
 
   # TODO: proper logging
-  CORE::say "[$name] Disconnected from $server";
+  CORE::say "[$netname] Disconnected from $server";
 
   $network->_set_connected(0);
   module_send_event(disconnected => $network, $server);
@@ -274,11 +274,11 @@ sub irc_welcome
   # 001 RPL_WELCOME
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $name = $network->name;
+  my $netname = $network->name;
 
   # TODO: proper logging
   my $server = $irc->server_name;
-  CORE::say "Network $name: Successfully connected to $server";
+  CORE::say "Network $netname: Successfully connected to $server";
   $network->_set_connected(1);
   $network->_set_connected_at(time);
 
@@ -293,7 +293,7 @@ sub irc_welcome
   # Join configured channels
   foreach my $channel (@{$network->channels})
   {
-    CORE::say "[$name] Joining $channel";
+    CORE::say "[$netname] Joining $channel";
     $irc->yield(join => $channel);
   }
 }
@@ -394,9 +394,10 @@ sub irc_error
 {
   my ($self, $heap, $errmsg) = @_[OBJECT, HEAP, ARG0];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
+  my $netname = $network->name
 
   # TODO: proper logging
-  CORE::say "Network $network->name error: $errmsg";
+  CORE::say "Network $netname error: $errmsg";
   module_send_event(server_error => $errmsg);
 }
 
@@ -406,9 +407,10 @@ sub irc_erroneous_nickname
   my ($self, $heap, $err) = @_[OBJECT, HEAP, ARG2];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $badnick = $err->[0];
+  my $netname = $network->name;
 
   # TODO: proper logging
-  CORE::say "[$network->name] Erroneous Nickname: $badnick";
+  CORE::say "[$netname] Erroneous Nickname: $badnick";
 
   # Let any intersted modules handle this event
   # NOTE: Not sure yet how we'll handle this event return here
@@ -419,7 +421,7 @@ sub irc_erroneous_nickname
   if (defined $nicklen and length $badnick > $nicklen)
   {
     # TODO: proper logging (debug?)
-    CORE::say "[$network->name] Truncating nick to fit NICKLEN";
+    CORE::say "[$netname] Truncating nick to fit NICKLEN";
     $irc->yield(nick => substr($badnick, 0, $nicklen));
   }
   else
@@ -430,7 +432,7 @@ sub irc_erroneous_nickname
     if (!$network->connected)
     {
       # TODO: proper logging
-      CORE::say "[$network->name] Cannot register connection with erroneous nickname; disconnecting.";
+      CORE::say "[$netname] Cannot register connection with erroneous nickname; disconnecting.";
       $irc->disconnect;
     }
   }
@@ -443,9 +445,10 @@ sub irc_nickname_in_use
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $nick = $network->nick;
+  my $netname = $network->name;
 
   # TODO: proper logging
-  CORE::say "[$network->name] Nick '$nick' already in use.";
+  CORE::say "[$netname] Nick '$nick' already in use.";
 
   # If we're in the registration phase, this event is either due to a ghosted
   # connection with this nick, or the nick is has been stolen (or perhaps the
