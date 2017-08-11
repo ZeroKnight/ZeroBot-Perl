@@ -1,5 +1,7 @@
 package ZeroBot::IRC::Network;
 
+use strictures 2;
+
 our $VERSION = "0.005";
 $VERSION = eval $VERSION;
 
@@ -51,10 +53,29 @@ has gecos => (
   default => "ZeroBot v$VERSION", # XXX: Get this from Core instead?
 );
 
+has host => (
+  is       => 'rwp',
+  isa      => Str,
+  init_arg => undef,
+);
+
 has umode => (
   is      => 'rw',
   isa     => IRC_Mode,
   default => '+i',
+);
+
+has connected => (
+  is       => 'rwp',
+  isa      => Bool,
+  default  => 0,
+  init_arg => undef,
+);
+
+has connected_at => (
+  is       => 'rwp',
+  isa      => Int,
+  init_arg => undef,
 );
 
 1;
