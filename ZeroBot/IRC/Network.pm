@@ -22,31 +22,31 @@ has irc => (
 );
 
 has servers => (
-  is       => 'rw',
+  is       => 'rwp',
   isa      => ArrayRef[InstanceOf['ZeroBot::IRC::Server']],
   required => 1,
 );
 
 has channels => (
-  is        => 'rw',
+  is        => 'rwp',
   isa       => ArrayRef[IRC_Channel],
   predicate => 'has_channel', # Do gooder at English
 );
 
 has nick => (
-  is      => 'rw',
+  is      => 'rwp',
   isa     => IRC_Nick,
   default => 'ZeroBot',
 );
 
 has user => (
-  is      => 'rw',
+  is      => 'rwp',
   isa     => IRC_User,
   default => 'zerobot',
 );
 
 has gecos => (
-  is      => 'rw',
+  is      => 'rwp',
   isa     => Str,
   default => "ZeroBot v$VERSION", # XXX: Get this from Core instead?
 );
