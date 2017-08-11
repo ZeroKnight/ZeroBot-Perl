@@ -8,9 +8,9 @@ This IRC bot serves no major purpose other than to amuse myself and friends in
 the IRC channels that I frequent, thus it doesn't do anything overly special; it
 is simply a pet project :)
 
-ZeroBot is designed to be completely modular; he consists only of a core and
-derives his functionality from modules or plugins, if you prefer. Thus, ZeroBot
-can be made to fit **any** role.
+ZeroBot is designed to be completely modular; he consists only of a simple core
+that provides a foundation that **modules** (or **plugins**, if you prefer) are
+built on. Thus, ZeroBot can be made to fit **any** role.
 
 Backstory that you probably don't care about
 ----------------------------------------------
