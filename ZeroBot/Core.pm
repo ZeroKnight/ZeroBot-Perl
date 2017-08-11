@@ -84,8 +84,6 @@ sub syndicator_started
   my $obj = ZeroBot::IRC->new();
 
   $self->plugin_add('IRC', $obj); # <<< this ends up calling *_register !!
-
-  ## NOTE: Make a flow chart for this shit. super confusing
 }
 
 sub syndicator_stopped
@@ -133,73 +131,6 @@ sub ZBCore_plugin_error
 
 __END__
 ### OLD
-
-sub _parse_command {
-  my $self = shift;
-  my ($lastarg, $need_optval, @opt, @val);
-  my $parse_opts = 1;
-  my $cmdhash = {
-    name => undef,
-    opt => {},
-    arg => []
-  };
-
-  foreach my $arg (split /\s+/, shift) {
-    if ($need_optval) {
-      if ($arg =~ /"$/) { # End of value; add to hash
-        push @val, $arg =~ tr/"//dr;
-        $cmdhash->{opt}{$opt[0]} = join(' ', @val);
-        $need_optval = 0;
-        @opt = (); @val = ();
-      } else { # Still part of value
-        push @val, $arg;
-      }
-    } else {
-      my $cmdchar = $self->CmdChar;
-      if ($parse_opts and $arg =~ /^$cmdchar\w+/) {
-        # Command Name
-        $cmdhash->{name} = eval "\$arg =~ tr/$cmdchar//dr";
-      } elsif ($parse_opts and $arg =~ /^--/) {
-        # Marker to stop processing options and
-        # treat everything else as arguments
-        $parse_opts = 0;
-      } elsif ($parse_opts and $arg =~ /^-\w+=/) {
-        # Option with value
-        $arg =~ tr/-//d;
-        @opt = split('=', $arg);
-        if ($opt[1] =~ /^"/) { # Value consists of multiple args
-          push @val, $opt[1] =~ tr/"//dr;
-          $need_optval = 1;
-        } else {
-          $cmdhash->{opt}{$opt[0]} = $opt[1];
-        }
-      } elsif ($parse_opts and $arg =~ /^-\w+/) {
-        # Option with no value
-        $arg =~ tr/-//d;
-        $cmdhash->{opt}{$arg} = undef;
-      } else {
-        # We've hit arguments, stop parsing options (and name)
-        $parse_opts = 0 if $parse_opts;
-        push $cmdhash->{arg}, $arg;
-      }
-    }
-  }
-  $self->_cmdhash($cmdhash);
-}
-
-sub _compress_arg {
-  # Compress quoted args into one. Takes an array reference
-  my ($self, $start, $args) = @_;
-
-  return unless ref $args eq 'ARRAY';
-
-  unless (@$args == 1) {
-    my $index = $start;
-    $index++ until $args->[$index] =~ /"$/;
-    splice @$args, $start, $index+1, "@$args[$start .. $index]";
-  }
-  $args->[$start] =~ tr/"//d;
-}
 
 sub speak {
   my ($self, $msgtype, $target, $body) = @_;
