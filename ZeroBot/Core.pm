@@ -29,7 +29,7 @@ has cfg => (
 
 has cmdchar => (
   is  => 'rwp',
-  isa => sub { length($_) == 1 },
+  isa => sub { length($_[0]) == 1 },
   lazy => 1,
   builder => sub {
     my $self = shift;
