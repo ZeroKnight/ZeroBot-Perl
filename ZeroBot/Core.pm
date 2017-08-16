@@ -132,40 +132,6 @@ sub ZBCore_plugin_error
 __END__
 ### OLD
 
-sub speak {
-  my ($self, $msgtype, $target, $body) = @_;
-
-  unless ($msgtype eq 'privmsg' or $msgtype eq 'notice') {
-    carp "speak: Message type must be either 'privmsg' or 'notice'";
-    return;
-  }
-
-  # Make sure we have a destination and something to send
-  if (!defined $target or !defined $body) {
-    carp "speak: Can't send a " . uc($msgtype) . ' without a target and body';
-    return;
-  }
-
-  # Figure out how long our message body can be. 512 characters maximum for
-  # messages, with 2 always being the CR-LF pair; the prefix, command and
-  # destination, and the 3 spaces and 2 colons separating the arguments
-  my $msg = ":$self->Bot->Nick!$self->Bot->User\@$self->Bot->Hostname $msgtype $target :";
-  my $maxlen = 510 - (length $msg);
-
-  # XXX: do we really need Text::Wrap for this single use case?
-  # Split up long messages if needed
-  if (length $body > $maxlen) {
-    local $Text::Wrap::columns = $maxlen;
-    my @wrapped = split /\n+/, Text::Wrap::wrap('', '', $body);
-
-    foreach my $chunk (@wrapped) {
-      $self->_ircobj->yield($msgtype, $target, $chunk);
-    }
-  } else {
-    $self->_ircobj->yield($msgtype, $target, $body);
-  }
-}
-
 sub privmsg {
   my ($self, $target, $body) = @_;
 
