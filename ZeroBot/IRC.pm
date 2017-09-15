@@ -394,7 +394,7 @@ sub irc_error
 {
   my ($self, $heap, $errmsg) = @_[OBJECT, HEAP, ARG0];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $netname = $network->name
+  my $netname = $network->name;
 
   # TODO: proper logging
   CORE::say "Network $netname error: $errmsg";
