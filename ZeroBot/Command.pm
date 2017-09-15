@@ -71,9 +71,10 @@ sub _check_spec
       }
       foreach my $opt (split /\|/, $names)
       {
-        croak "Duplicate name '$opt' in option spec '$names', first seen in '$seen{$opt}'"
-          if exists $seen{$opt};
-        $seen{$opt} = $names;
+        my $k = "$cmdname:$opt";
+        croak "Duplicate option '$opt' in spec '$cmdname:$names', first seen in '$seen{$k}'"
+          if exists $seen{$k};
+        $seen{$k} = $names;
       }
     }
   }
