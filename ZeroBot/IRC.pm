@@ -3,6 +3,9 @@ package ZeroBot::IRC;
 our $VERSION = "0.005";
 $VERSION = eval $VERSION;
 
+use strictures 2;
+use feature 'say';
+
 use ZeroBot::Common;
 use ZeroBot::Module -all;
 use ZeroBot::IRC::Network;
@@ -42,7 +45,7 @@ sub _initialize_irc
   my $self = shift;
 
   # TODO: Proper logging
-  CORE::say 'Initializing IRC Module';
+  say 'Initializing IRC Module';
 
   my $irc_cfg = ZBCORE->cfg->irc;
   my ($available, $autoconnecting);
@@ -57,7 +60,7 @@ sub _initialize_irc
       unless ($server->{Hostname})
       {
         # TODO: proper logging
-        CORE::say "Server defined in $network has no Hostname, trying next.";
+        say "Server defined in $network has no Hostname, trying next.";
         next;
       }
 
@@ -73,7 +76,7 @@ sub _initialize_irc
     unless (@servers)
     {
       # TODO: Proper logging
-      CORE::say "Network $network does not have any servers defined! Ignoring.";
+      say "Network $network does not have any servers defined! Ignoring.";
       next;
     }
 
@@ -110,7 +113,7 @@ sub _initialize_irc
     ++$available;
   }
   # TODO: proper logging
-  CORE::say "Initialized $available Networks, $autoconnecting auto-connecting";
+  say "Initialized $available Networks, $autoconnecting auto-connecting";
 }
 
 sub Bot_irc_connect_network
@@ -122,7 +125,7 @@ sub Bot_irc_connect_network
   unless (defined $network_obj)
   {
     # TODO: Proper logging
-    CORE::say "Attempted to connect unknown Network $network";
+    say "Attempted to connect unknown Network $network";
     return MODULE_EAT_ALL;
   }
 
@@ -135,7 +138,7 @@ sub Bot_irc_connect_network
   # TODO: proper logging
   my $hostname = $network_obj->servers->[0]->hostname;
   my $port = $network_obj->servers->[0]->port;
-  CORE::say "Spawning IRC connection for Network $network, Server $hostname on port $port";
+  say "Spawning IRC connection for Network $network, Server $hostname on port $port";
 
   my %spawn_opts = (
     alias      => "IRC_$network",
@@ -158,7 +161,7 @@ sub Bot_irc_connect_network
 
   # TODO: proper logging
   my $irc = POE::Component::IRC::State->spawn(%spawn_opts)
-    or CORE::say "Failed to spawn() IRC component for Network $network"
+    or say "Failed to spawn() IRC component for Network $network"
     and return MODULE_EAT_ALL;
   $network_obj->set_irc($irc);
 
@@ -253,7 +256,7 @@ sub irc_connected
   my $netname = $network->name;
 
   # TODO: proper logging (debug? or info?)
-  CORE::say "[$netname] Established connection to $server, now registering...";
+  say "[$netname] Established connection to $server, now registering...";
 }
 
 sub irc_disconnected
@@ -263,7 +266,7 @@ sub irc_disconnected
   my $netname = $network->name;
 
   # TODO: proper logging
-  CORE::say "[$netname] Disconnected from $server";
+  say "[$netname] Disconnected from $server";
 
   $network->_set_connected(0);
   module_send_event(disconnected => $network, $server);
@@ -278,7 +281,7 @@ sub irc_welcome
 
   # TODO: proper logging
   my $server = $irc->server_name;
-  CORE::say "Network $netname: Successfully connected to $server";
+  say "Network $netname: Successfully connected to $server";
   $network->_set_connected(1);
   $network->_set_connected_at(time);
 
@@ -293,7 +296,7 @@ sub irc_welcome
   # Join configured channels
   foreach my $channel (@{$network->channels})
   {
-    CORE::say "[$netname] Joining $channel";
+    say "[$netname] Joining $channel";
     $irc->yield(join => $channel);
   }
 }
@@ -397,7 +400,7 @@ sub irc_error
   my $netname = $network->name;
 
   # TODO: proper logging
-  CORE::say "Network $netname error: $errmsg";
+  say "Network $netname error: $errmsg";
   module_send_event(server_error => $errmsg);
 }
 
@@ -410,7 +413,7 @@ sub irc_erroneous_nickname
   my $netname = $network->name;
 
   # TODO: proper logging
-  CORE::say "[$netname] Erroneous Nickname: $badnick";
+  say "[$netname] Erroneous Nickname: $badnick";
 
   # Let any intersted modules handle this event
   # NOTE: Not sure yet how we'll handle this event return here
@@ -421,7 +424,7 @@ sub irc_erroneous_nickname
   if (defined $nicklen and length $badnick > $nicklen)
   {
     # TODO: proper logging (debug?)
-    CORE::say "[$netname] Truncating nick to fit NICKLEN";
+    say "[$netname] Truncating nick to fit NICKLEN";
     $irc->yield(nick => substr($badnick, 0, $nicklen));
   }
   else
@@ -432,7 +435,7 @@ sub irc_erroneous_nickname
     if (!$network->connected)
     {
       # TODO: proper logging
-      CORE::say "[$netname] Cannot register connection with erroneous nickname; disconnecting.";
+      say "[$netname] Cannot register connection with erroneous nickname; disconnecting.";
       $irc->disconnect;
     }
   }
@@ -448,7 +451,7 @@ sub irc_nickname_in_use
   my $netname = $network->name;
 
   # TODO: proper logging
-  CORE::say "[$netname] Nick '$nick' already in use.";
+  say "[$netname] Nick '$nick' already in use.";
 
   # If we're in the registration phase, this event is either due to a ghosted
   # connection with this nick, or the nick is has been stolen (or perhaps the
@@ -490,7 +493,7 @@ sub irc_default
       push(@output, "'$arg'");
     }
   }
-  CORE::say "@output";
+  say "@output";
   return;
 }
 
