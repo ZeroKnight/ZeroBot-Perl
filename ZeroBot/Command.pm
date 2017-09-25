@@ -3,12 +3,9 @@ package ZeroBot::Command;
 use strictures 2;
 
 use Carp;
-use Import::Into;
 use ZeroBot::Common {import => [qw(types)]};
+use ZeroBot::Command::Constants;
 use ZeroBot::Command::Parser;
-
-# XXX: FIXME: Make OPTVAL_* constants available for construction
-BEGIN { ZeroBot::Command::Parser->import::into('ZeroBot::IRC'); }
 
 use Moo;
 
@@ -21,50 +18,78 @@ has line => (
   required => 1,
 );
 
-has spec => (
-  is      => 'ro',
-  isa     => HashRef,
-  default => sub { {} },
-);
-
 has name => (
-  is  => 'rwp',
-  isa => Str,
+  is       => 'rwp',
+  isa      => Str,
+  init_arg => undef,
 );
 
 has args => (
   is        => 'rwp',
   isa       => ArrayRef[Str],
-  default => sub { [] },
+  default   => sub { [] },
   predicate => 1,
+  init_arg  => undef,
 );
 
 has opts => (
   is        => 'rwp',
   isa       => HashRef,
-  default => sub { {} },
+  default   => sub { {} },
   predicate => 1,
+  init_arg  => undef,
 );
 
-sub BUILD
+# Set by parse(); used for modules to determine if the parsed command matches
+# the spec given to parse()
+has expected => (
+  is       => 'rwp',
+  isa      => Int,
+  default  => sub { -1 },
+  init_arg => undef,
+);
+
+sub parse
 {
   my $self = shift;
-  $self->_check_spec;
-  my $p = ZeroBot::Command::Parser->new(cmd => $self);
+  my $spec;
+  if (ref $_[0] eq 'HASH')
+  {
+    $spec = $_[0];
+  }
+  else
+  {
+    $spec = { @_ };
+  }
+  $self->_check_spec($spec);
+  my $p = ZeroBot::Command::Parser->new(cmd => $self, spec => $spec);
   $p->parse();
+}
+
+sub argc
+{
+  my $self = shift;
+  return scalar @{$self->args}
+}
+
+sub args_str
+{
+  my ($self, $delim) = @_;
+  $delim //= ' ';
+  return join $delim, @{$self->args};
 }
 
 sub _check_spec
 {
-  my $self = shift;
+  my ($self, $spec) = @_;
   my %seen;
   croak 'spec must contain at least one command'
-    unless scalar keys %{$self->spec};
-  foreach my $cmdname (keys %{$self->spec})
+    unless scalar keys %{$spec};
+  foreach my $cmdname (keys %{$spec})
   {
-    foreach my $names (keys %{$self->spec->{$cmdname}})
+    foreach my $names (keys %{$spec->{$cmdname}})
     {
-      my $req = $self->spec->{$cmdname}->{$names};
+      my $req = $spec->{$cmdname}->{$names};
       if (!defined $req or $req < OPTVAL_NONE or $req > OPTVAL_REQUIRED)
       {
         croak 'Values in spec must be between '.OPTVAL_NONE.'-'.OPTVAL_REQUIRED;

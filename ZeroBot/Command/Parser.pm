@@ -2,25 +2,21 @@ package ZeroBot::Command::Parser;
 
 use strictures 2;
 
-my %constants;
-BEGIN { %constants = (
-  OPTVAL_NONE     => 1,
-  OPTVAL_OPTIONAL => 2,
-  OPTVAL_REQUIRED => 3,
-)};
-use constant \%constants;
-
-use parent 'Exporter::Tiny';
-our @EXPORT = (keys %constants);
-
 use Carp;
 use ZeroBot::Common {import => [qw(types)]};
+use ZeroBot::Command::Constants;
 
 use Moo;
 
 has cmd => (
   is       => 'ro',
   isa      => InstanceOf['ZeroBot::Command'],
+  required => 1,
+);
+
+has spec => (
+  is  => 'ro',
+  isa => HashRef,
   required => 1,
 );
 
@@ -63,9 +59,20 @@ sub parse
   die 'Input does not seem to be a command: `'.$self->cmd->line.'`'
     unless $self->_current eq ZBCORE->cmdchar;
   $self->_next;
-  $self->cmd->_set_name($self->_get_value);
 
-  $DB::single = 1;
+  # Don't bother parsing the rest of the command if it's not expected
+  my $name = $self->_get_value;
+  if (exists $self->spec->{$name})
+  {
+    $self->cmd->_set_name($name);
+    $self->cmd->_set_expected(1);
+  }
+  else
+  {
+    $self->cmd->_set_expected(0);
+    return;
+  }
+
   # Parse the remainder of the command
   while ($self->pos < $self->end)
   {
@@ -369,7 +376,7 @@ sub _set_opt
 sub _is_valid_opt
 {
   my ($self, $opt) = @_;
-  foreach my $names (keys %{$self->cmd->spec->{$self->cmd->name}})
+  foreach my $names (keys %{$self->spec->{$self->cmd->name}})
   {
     return 1 if $opt =~ /$names/;
   }
@@ -382,28 +389,28 @@ sub _optval_required
 {
   my ($self, $opt) = @_;
   my $cmdname = $self->cmd->name;
-  foreach my $names (keys %{$self->cmd->spec->{$cmdname}})
+  foreach my $names (keys %{$self->spec->{$cmdname}})
   {
-    return $self->cmd->spec->{$cmdname}->{$names} if $opt =~ /$names/;
+    return $self->spec->{$cmdname}->{$names} if $opt =~ /$names/;
   }
   return 0;
 }
 
 # Given an option that was just set, creates key(s) in $self->cmd->opts for each
-# (if any) aliases of the given option, whose values are a reference to the
-# original option's value.
+# (if any) aliases of the given option, whose values are a copy of the original
+# option's value.
 sub _link_aliases
 {
   my ($self, $opt) = @_;
   my $cmdname = $self->cmd->name;
   return if $self->_seen_opt_names->{$opt};
-  foreach my $names (keys %{$self->cmd->spec->{$cmdname}})
+  foreach my $names (keys %{$self->spec->{$cmdname}})
   {
     next unless $opt =~ /$names/;
     foreach my $alias (grep { $_ ne $opt } split /\|/, $names)
     {
       $self->_seen_opt_names->{$alias} = 1;
-      $self->cmd->opts->{$alias} = \$self->cmd->opts->{$opt};
+      $self->cmd->opts->{$alias} = $self->cmd->opts->{$opt};
     }
   }
   $self->_seen_opt_names->{$opt} = 1;

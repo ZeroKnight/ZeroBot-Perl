@@ -328,49 +328,31 @@ sub irc_spoke
   my ($heap, $src, $dests, $body) = @_[HEAP, ARG0 .. ARG2];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $cmdchar = ZBCORE->cmdchar;
+  my %event = (network => $network, src => $src, dests => $dests);
 
   # Determine whether this is a plain message, or a command
-  if ($msgtype < MSGTYPE_NOTICE and $body =~ /^$cmdchar/)
+  if ($msgtype < MSGTYPE_NOTICE and substr($body, 0, 1) eq $cmdchar)
   {
-    # module_send_event(commanded => $body);
-    # ...
-    # XXX: temp test
-    my $cmd = ZeroBot::Command->new(
-      line => $body,
-      spec => {
-        test => {
-          'h|help|fuck' => OPTVAL_NONE,
-          'f|foo' => OPTVAL_NONE,
-          'b|bar|barr' => OPTVAL_REQUIRED,
-          'l|log' => OPTVAL_OPTIONAL,
-        }
-      }
-    );
-    {
-      no warnings;
-      my @m = ('Name:', $cmd->name, 'Args:', @{$cmd->args}, 'Opts:', %{$cmd->opts});
-      $irc->yield(privmsg => $dests->[0], "@m");
-    }
+    my $cmd = ZeroBot::IRC::Command->new(%event, line => $body);
+    module_send_event(commanded => $cmd);
   }
   else
   {
-    use feature 'switch';
-    no warnings 'experimental::smartmatch';
     my $msg = ZeroBot::IRC::Message->new(
-      network => $network,
-      src     => $src,
-      dests   => $dests,
+      %event,
       type    => $msgtype,
       message => $body,
     );
-    # for ($msgtype)
-    # {
-    #   module_send_event(public  => $msg) when MSGTYPE_PUBLIC;
-    #   module_send_event(private => $msg) when MSGTYPE_PRIVATE;
-    #   module_send_event(notice  => $msg) when MSGTYPE_NOTICE;
-    #   module_send_event(action  => $msg) when MSGTYPE_ACTION;
-    # }
-    # ...
+
+    use feature 'switch';
+    no warnings 'experimental::smartmatch';
+    for ($msgtype)
+    {
+      module_send_event(irc_msg_public  => $msg) when MSGTYPE_PUBLIC;
+      module_send_event(irc_msg_private => $msg) when MSGTYPE_PRIVATE;
+      module_send_event(irc_notice      => $msg) when MSGTYPE_NOTICE;
+      module_send_event(irc_action      => $msg) when MSGTYPE_ACTION;
+    }
   }
 }
 
