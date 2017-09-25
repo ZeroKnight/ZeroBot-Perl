@@ -116,6 +116,48 @@ sub _initialize_irc
   say "Initialized $available Networks, $autoconnecting auto-connecting";
 }
 
+sub _create_network_session
+{
+  my ($self, $network) = @_;
+
+  # TODO: Logging and error check for create()
+
+  # Create a session and assign callbacks to handle the IRC messages/events
+  # Store the corresponding Network name in the heap
+  POE::Session->create(
+    heap => { network => $network, irc => $network->irc },
+    object_states => [
+      $self => [qw(
+        _start
+        _stop
+        irc_error
+        irc_connected
+        irc_disconnected
+
+        irc_join
+        irc_nick
+
+        irc_302
+      )],
+      $self => {
+        _default => 'irc_default',
+        irc_001  => 'irc_welcome',
+        irc_432  => 'irc_erroneous_nickname',
+        irc_433  => 'irc_nickname_in_use',
+      },
+    ],
+    # Inlining these prevents requiring 4 nearly-identical subs or a bunch of
+    # wrapper subs feeding irc_spoke
+    inline_states => {
+      irc_public      => sub { $self->irc_spoke(MSGTYPE_PUBLIC,  @_) },
+      irc_msg         => sub { $self->irc_spoke(MSGTYPE_PRIVATE, @_) },
+      irc_notice      => sub { $self->irc_spoke(MSGTYPE_NOTICE,  @_) },
+      irc_ctcp_action => sub { $self->irc_spoke(MSGTYPE_ACTION,  @_) },
+    },
+  ) or die 'Failed to create IRC component session for Network '.$network->name."\n";
+  # TODO: proper logging
+}
+
 sub Bot_irc_connect_network
 {
   my ($self, $core) = splice @_, 0, 2;
@@ -172,48 +214,6 @@ sub Bot_irc_connect_network
   return MODULE_EAT_ALL;
 }
 
-sub _create_network_session
-{
-  my ($self, $network) = @_;
-
-  # TODO: Logging and error check for create()
-
-  # Create a session and assign callbacks to handle the IRC messages/events
-  # Store the corresponding Network name in the heap
-  POE::Session->create(
-    heap => { network => $network, irc => $network->irc },
-    object_states => [
-      $self => [qw(
-        _start
-        _stop
-        irc_error
-        irc_connected
-        irc_disconnected
-
-        irc_join
-        irc_nick
-
-        irc_302
-      )],
-      $self => {
-        _default => 'irc_default',
-        irc_001  => 'irc_welcome',
-        irc_432  => 'irc_erroneous_nickname',
-        irc_433  => 'irc_nickname_in_use',
-      },
-    ],
-    # Inlining these prevents requiring 4 nearly-identical subs or a bunch of
-    # wrapper subs feeding irc_spoke
-    inline_states => {
-      irc_public      => sub { $self->irc_spoke(MSGTYPE_PUBLIC,  @_) },
-      irc_msg         => sub { $self->irc_spoke(MSGTYPE_PRIVATE, @_) },
-      irc_notice      => sub { $self->irc_spoke(MSGTYPE_NOTICE,  @_) },
-      irc_ctcp_action => sub { $self->irc_spoke(MSGTYPE_ACTION,  @_) },
-    },
-  ) or die 'Failed to create IRC component session for Network '.$network->name."\n";
-  # TODO: proper logging
-}
-
 sub _start
 {
   my ($self, $kernel, $heap) = @_[OBJECT, KERNEL, HEAP];
@@ -248,6 +248,30 @@ sub _stop
   # related cleanup
   ...
 }
+
+sub Bot_irc_msg_send
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my $network = ${$_[0]};
+  my $dest    = ${$_[1]};
+  my $msg     = encode_utf8(${$_[2]});
+
+  $network->irc->yield(privmsg => $dest, $msg);
+  return MODULE_EAT_NONE;
+}
+
+sub Bot_irc_action_send
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my $network = ${$_[0]};
+  my $dest    = ${$_[1]};
+  my $action  = encode_utf8(${$_[2]});
+
+  $network->irc->yield(ctcp => $dest, "ACTION $action");
+  return MODULE_EAT_NONE;
+}
+
+### IRC Events #################################################
 
 sub irc_connected
 {
