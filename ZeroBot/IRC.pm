@@ -11,6 +11,7 @@ use ZeroBot::IRC::Server;
 use ZeroBot::IRC::Message;
 use ZeroBot::IRC::Command;
 
+use Encode qw(encode_utf8);
 use IRC::Utils ':ALL';
 use POE qw(
   Component::IRC::State
