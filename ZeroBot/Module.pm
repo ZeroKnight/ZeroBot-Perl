@@ -15,12 +15,13 @@ BEGIN { %constants = (
 use constant \%constants;
 
 use parent 'Exporter::Tiny';
-our @EXPORT = qw();
+our @EXPORT = ();
 our @EXPORT_OK = (
   qw(module_register module_send_event),
   keys %constants,
 );
 our %EXPORT_TAGS = (
+  std    => [qw(:consts module_register module_send_event)],
   consts => [keys %constants],
 );
 

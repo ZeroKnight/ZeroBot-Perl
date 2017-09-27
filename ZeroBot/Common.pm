@@ -14,6 +14,10 @@ my %import_map = (
     'Types::Standard'      => ['-types'],
     'ZeroBot::Util::Types' => ['-all'],
   },
+
+  cmdconsts => {
+    'ZeroBot::Command::Constants' => []
+  }
 );
 
 sub import
