@@ -4,6 +4,9 @@ use strictures 2;
 our $VERSION = '0.005';
 $VERSION = eval $VERSION;
 
+# XXX: Temporary. Move this to the appropriate logging classes
+binmode STDOUT, ':encoding(utf8)';
+
 use ZeroBot::Config;
 
 use Carp;
