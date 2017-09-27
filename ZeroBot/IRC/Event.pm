@@ -1,9 +1,8 @@
 package ZeroBot::IRC::Event;
 
-use strictures 2;
+use ZeroBot::Common -types;
 
 use Carp;
-use ZeroBot::Common {import => [qw(types)]};
 use IRC::Utils qw(parse_user);
 
 use Moo::Role;

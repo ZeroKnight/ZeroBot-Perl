@@ -1,9 +1,8 @@
 package ZeroBot::Command::Parser;
 
-use strictures 2;
+use ZeroBot::Common -types;
 
 use Carp;
-use ZeroBot::Common {import => [qw(types)]};
 use ZeroBot::Command::Constants;
 
 use Moo;

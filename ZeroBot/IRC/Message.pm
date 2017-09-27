@@ -1,6 +1,6 @@
 package ZeroBot::IRC::Message;
 
-use strictures 2;
+use ZeroBot::Common -types;
 
 my %constants;
 BEGIN { %constants = (
@@ -17,7 +17,6 @@ our @EXPORT_OK = qw();
 
 use Carp;
 
-use ZeroBot::Common {import => [qw(types)]};
 use IRC::Utils qw(strip_color strip_formatting);
 
 use Moo;

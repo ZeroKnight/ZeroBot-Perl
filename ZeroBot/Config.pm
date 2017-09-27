@@ -1,6 +1,6 @@
 package ZeroBot::Config;
 
-use strictures 2;
+use ZeroBot::Common -types;
 
 use ZeroBot::Config::File::Core;
 use ZeroBot::Config::File::Plugin;
@@ -8,7 +8,6 @@ use ZeroBot::Config::File::Plugin;
 use Moo;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
-use Types::Standard qw(InstanceOf HashRef);
 
 # Path where ZeroBot's configuration files are stored
 has config_dir => (

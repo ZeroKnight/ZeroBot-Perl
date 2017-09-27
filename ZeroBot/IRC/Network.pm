@@ -1,12 +1,11 @@
 package ZeroBot::IRC::Network;
 
-use strictures 2;
+use ZeroBot::Common -types;
 
 our $VERSION = "0.005";
 $VERSION = eval $VERSION;
 
 use Moo;
-use ZeroBot::Common {import => [qw(types)]};
 
 # Identifier for the Network, eg. MyNetwork
 has name => (

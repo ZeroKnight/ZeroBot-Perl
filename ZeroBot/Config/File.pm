@@ -1,14 +1,13 @@
 package ZeroBot::Config::File;
 
-use strictures 2;
+use ZeroBot::Common -types;
 
 use Carp;
-use Moo;
-use Try::Tiny;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
-use Types::Standard qw(HashRef);
 use YAML::XS qw(LoadFile DumpFile);
+
+use Moo;
 
 # Path to the config file itself
 has filepath => (

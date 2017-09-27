@@ -3,10 +3,8 @@ package ZeroBot::IRC;
 our $VERSION = "0.005";
 $VERSION = eval $VERSION;
 
-use strictures 2;
-use feature 'say';
+use ZeroBot::Common -types;
 
-use ZeroBot::Common;
 use ZeroBot::Module -all;
 use ZeroBot::IRC::Network;
 use ZeroBot::IRC::Server;
