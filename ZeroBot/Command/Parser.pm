@@ -14,8 +14,8 @@ has cmd => (
 );
 
 has spec => (
-  is  => 'ro',
-  isa => HashRef,
+  is       => 'ro',
+  isa      => HashRef,
   required => 1,
 );
 
@@ -27,9 +27,9 @@ has pos => (
 );
 
 has end => (
-  is      => 'ro',
-  isa     => Int,
-  builder => sub { length $_[0]->cmd->line },
+  is       => 'ro',
+  isa      => Int,
+  builder  => sub { length $_[0]->cmd->line },
   init_arg => undef,
 );
 
@@ -37,6 +37,13 @@ has parse_opts => (
   is       => 'rwp',
   isa      => Bool,
   default  => sub { 1 },
+  init_arg => undef,
+);
+
+has failed => (
+  is       => 'rwp',
+  isa      => Bool,
+  default  => sub { 0 },
   init_arg => undef,
 );
 
@@ -55,12 +62,13 @@ sub parse
 
   # First, attempt to extract command name. Complain if the first character is
   # not the command character.
-  die 'Input does not seem to be a command: `'.$self->cmd->line.'`'
+  croak 'Input does not seem to be a command: `'.$self->cmd->line.'`'
     unless $self->_current eq ZBCORE->cmdchar;
   $self->_next;
 
   # Don't bother parsing the rest of the command if it's not expected
   my $name = $self->_get_value;
+  return $self->cmd if $self->failed;
   if (exists $self->spec->{$name})
   {
     $self->cmd->_set_name($name);
@@ -71,6 +79,7 @@ sub parse
     $self->cmd->_set_expected(0);
     return;
   }
+  $self->_next;
 
   # Parse the remainder of the command
   while ($self->pos < $self->end)
@@ -87,31 +96,37 @@ sub parse
         # Are we a long option?
         if ($self->_peek eq '-')
         {
-          $c = $self->_next(2);
-
           # Check for option terminator: a bare '--'
           # undef is checked here in case a command is terminated with a '--';
           # this is redundant, but valid nonetheless.
-          if (!defined $c or $c eq ' ')
+          my $p = $self->_peek(2);
+          if (!defined $p or $p eq ' ')
           {
             $self->_set_parse_opts(0); # Nothing else will be parsed as an option
+            $self->_next(3);
           }
           else
           {
             $self->_get_opt_long;
+            return $self->cmd if $self->failed;
           }
         }
         else
         {
-          die $self->_diagmsg('Expected character after option specifier')
-            unless $self->_next;
+          unless (defined $c and $c ne ' ')
+          {
+            $self->_error('Expected character after option specifier');
+            return $self->cmd;
+          }
           $self->_get_opt;
+          return $self->cmd if $self->failed;
         }
       }
       else
       {
         # No longer parsing options, just push to the argument stack
         $self->_get_arg;
+        return $self->cmd if $self->failed;
       }
     }
     elsif (!defined $c)
@@ -121,8 +136,10 @@ sub parse
     else
     {
       $self->_get_arg;
+      return $self->cmd if $self->failed;
     }
   }
+  $self->cmd->_set_valid(1);
   return $self->cmd;
 }
 
@@ -162,7 +179,6 @@ sub _get_value
     elsif ($c =~ /$delim_pattern/ and not $in_string)
     {
       # Unless we're currently in a quoted string, this is the end of the value
-      $self->_next;
       return $value;
     }
     elsif ($c eq '\\' and not $in_string)
@@ -190,16 +206,24 @@ sub _get_value
     $value .= $c;
     $c = $self->_next;
   }
-  die $self->_diagmsg('Unterminated string starting', $quote_pos)
-    if $in_string;
-  $self->_next;
-  return $value;
+
+  if ($in_string)
+  {
+    $self->_error('Unterminated string starting', $quote_pos);
+    return undef;
+  }
+  else
+  {
+    $self->_next;
+    return $value;
+  }
 }
 
 sub _get_arg
 {
   my $self = shift;
   my $arg = $self->_get_value;
+  $self->_next;
   push @{$self->cmd->args}, $arg;
   return $arg;
 }
@@ -207,82 +231,111 @@ sub _get_arg
 sub _get_opt
 {
   my $self = shift;
-  my $opt = $self->_current;
+  my $opt = $self->_next;
 
   # Make sure we're attemping to parse the correct type of option
   croak $self->_diagmsg('_get_opt() called on long option') if $opt eq '-';
 
   if ($opt =~ /[[:alnum:]]/)
   {
-    die $self->_diagmsg("Invalid option '-$opt'")
-      unless $self->_is_valid_opt($opt);
+    unless ($self->_is_valid_opt($opt))
+    {
+      $self->_error("Invalid option '-$opt'");
+      return;
+    }
 
     # Handle option values, if necessary
     my $req = $self->_optval_required($opt);
     if ($req > OPTVAL_NONE)
     {
-      my $n = $self->_next;
+      my $n = $self->_peek;
       if (defined $n and $n eq ' ')
       {
-        $self->_next;
+        my $val;
+        $self->_next(2);
         if ($req == OPTVAL_REQUIRED)
         {
           # Options with required values are greedy, the next atom is consumed
           # as the option's value, even if it looks like another option.
-          my $val = $self->_get_value;
-          die $self->_diagmsg("Option '-$opt' expects value")
-            unless defined $val;
-          $self->cmd->opts->{$opt} = $val;
+          $val = $self->_get_value;
+          unless (defined $val)
+          {
+            $self->_error("Option '-$opt' expects value");
+            return;
+          }
+          $self->_next;
         }
         else
         {
           # For optional values, the next atom is assumed to be the option
           # value UNLESS it starts with a '-'
-          $self->cmd->opts->{$opt} = $self->_current =~ /^-/ ? undef
-            : $self->_get_value;
+          $val = $self->_current eq '-' ? undef : $self->_get_value;
+          $self->_next if defined $val;
         }
+        $self->cmd->opts->{$opt} = $val;
       }
       elsif (defined $n and $n eq '=')
       {
         # Using equals explicitly denotes a value, regardless of whether an
         # option value is optional or required.
-        $self->_next;
+        $self->_next(2);
         my $val = $self->_get_value;
-        die $self->_diagmsg( "Option '-$opt' with explicit equals expects value")
-          unless defined $val;
+        unless (defined $val)
+        {
+          $self->_error("Option '-$opt' with explicit equals expects value");
+          return;
+        }
         $self->cmd->opts->{$opt} = $val;
+        $self->_next;
       }
       else
       {
-        die $self->_diagmsg("Option '-$opt' expects value", $self->pos - 1)
-          if $req == OPTVAL_REQUIRED;
+        if ($req == OPTVAL_REQUIRED)
+        {
+          $self->_error("Option '-$opt' expects value", $self->pos - 1);
+          return;
+        }
 
-        # Grouped options, so no optional value. Parse the next one.
         $self->cmd->opts->{$opt} = undef;
-        $self->_get_opt;
+        if (defined $n)
+        {
+          # Grouped options, so no optional value. Parse the next one.
+          $self->_get_opt;
+        }
+        else
+        {
+          # Option has optional value, but we're at the end of the command
+          $self->_next;
+        }
       }
     }
     else # OPTVAL_NONE
     {
       $self->cmd->opts->{$opt} = undef;
-      $self->_next;
+      my $p = $self->_peek;
+      last unless defined $p; # Nothing else to parse, break out
+      if ($p eq '-')
       {
-        my $p = $self->_current;
-        last unless defined $p; # Nothing else to parse, break out
-        die $self->_diagmsg("Erroneous '-' in option grouping") if $p eq '-';
-        if ($p eq '=')
-        {
-          # Ignore explicit option value
-          carp $self->_diagmsg(
-            "Equals given for option '-$opt', but it does not expect a value"
-          );
-          $self->_get_value;
-        }
-        elsif ($p ne ' ')
-        {
-          # Grouped options, parse the next one
-          $self->_get_opt;
-        }
+        $self->_error("Erroneous '-' in option grouping", $p);
+        return;
+      }
+      elsif ($p eq '=')
+      {
+        # Ignore explicit option value; discard result of _get_value
+        $self->_warn(
+          "Equals given for option '-$opt', but it does not expect a value"
+        );
+        $self->_get_value;
+        $self->_next;
+      }
+      elsif ($p ne ' ')
+      {
+        # Grouped options, parse the next one
+        $self->_get_opt;
+      }
+      else
+      {
+        $self->_next(2);
       }
     }
     # Propagate aliases
@@ -290,85 +343,94 @@ sub _get_opt
   }
   else
   {
-    die $self->_diagmsg("Erroneous option character '$opt'; options must be alphanumeric");
+    $self->_error("Erroneous option character '$opt'; options must be alphanumeric");
+    return;
   }
 }
 
 sub _get_opt_long
 {
   my $self = shift;
+  $self->_next(2);
   my $opt = $self->_get_value(' |=');
-  die $self->_diagmsg("Invalid option '--$opt'") unless $self->_is_valid_opt($opt);
+
+  if (length $opt < 2)
+  {
+    $self->_error("Long options must be at least 2 characters");
+    return;
+  }
+
+  unless ($self->_is_valid_opt($opt))
+  {
+    $self->_error("Invalid option '--$opt'", $self->pos - 2);
+    return;
+  }
 
   # Handle option values, if necessary
   my $req = $self->_optval_required($opt);
   if ($req > OPTVAL_NONE)
   {
+    my $val;
     my $n = $self->_current;
-    if (defined $n)
+    if (defined $n and $n eq '=')
     {
-      my $val = $self->_get_value;
+      # Using equals explicitly denotes a value, regardless of whether an option
+      # value is optional or required.
+      $self->_next;
+      $val = $self->_get_value;
+      unless (defined $val)
+      {
+        $self->_error("Option '--$opt' with explicit equals expects value");
+        return;
+      }
+      $self->_next;
+    }
+    elsif (defined $n)
+    {
+      $self->_next;
       if ($req == OPTVAL_REQUIRED)
       {
         # Options with required values are greedy, the next atom is consumed
         # as the option's value, even if it looks like another option.
-        die $self->_diagmsg("Option '--$opt' expects value")
-          unless defined $val;
-        # $self->cmd->opts->{$opt} = $val;
-        $self->_set_opt($opt, $val);
+        $val = $self->_get_value;
+        unless (defined $val)
+        {
+          $self->_error("Option '--$opt' expects value");
+          return;
+        }
+        $self->_next;
       }
       else
       {
-        # For optional values, the next atom is assumed to be the option
-        # value UNLESS it starts with a '-'
-        $self->cmd->opts->{$opt} = $val unless $val =~ /^-/;
+        # For optional values, the next atom is assumed to be the option value
+        # UNLESS it starts with a '-'
+        $val = $self->_current eq '-' ? undef : $self->_get_value;
+        $self->_next if defined $val;
       }
     }
-    elsif (defined $n and $n eq '=')
+    elsif ($req == OPTVAL_REQUIRED)
     {
-      # Using equals explicitly denotes a value, regardless of whether an
-      # option value is optional or required.
-      $self->_next;
-      my $val = $self->_get_value;
-      die $self->_diagmsg("Option '--$opt' with explicit equals expects value")
-        unless defined $val;
-      $self->cmd->opts->{$opt} = $val;
+      $self->_error("Option '--$opt' expects value", $self->pos - 1);
+      return;
     }
-    else
-    {
-      die $self->_diagmsg("Option '--$opt' expects value", $self->pos - 1)
-        if $req == OPTVAL_REQUIRED;
-      $self->cmd->opts->{$opt} = undef;
-    }
+    $self->cmd->opts->{$opt} = $val;
   }
   else # OPTVAL_NONE
   {
     $self->cmd->opts->{$opt} = undef;
-    my $p = $self->_peek;
-    if (defined $p and $p eq '=')
+    if ($self->_current eq '=')
     {
-      # Ignore explicit option value
-      carp $self->_diagmsg("Equals given for option '--$opt', but it does not expect a value");
+      # Ignore explicit option value; discard result of _get_value
+      $self->_warn(
+        "Equals given for option '--$opt', but it does not expect a value"
+      );
       $self->_next;
       $self->_get_value;
     }
+    $self->_next;
   }
   # Propagate aliases
   $self->_link_aliases($opt);
-}
-
-# Sets an option and its value, taking aliases into account
-sub _set_opt
-{
-  my ($self, $opt, $val) = @_;
-  if (exists $self->cmd->opts->{$opt} and ref $self->cmd->opts->{$opt})
-  {
-    ${$self->cmd->opts->{$opt}} = $val;
-  }
-  else
-  {
-    $self->cmd->opts->{$opt} = $val;
-  }
 }
 
 # Determines if the given option name is in the option spec
@@ -377,7 +439,7 @@ sub _is_valid_opt
   my ($self, $opt) = @_;
   foreach my $names (keys %{$self->spec->{$self->cmd->name}})
   {
-    return 1 if $opt =~ /$names/;
+    return 1 if $opt =~ /\b$names\b/;
   }
   return 0;
 }
@@ -390,7 +452,7 @@ sub _optval_required
   my $cmdname = $self->cmd->name;
   foreach my $names (keys %{$self->spec->{$cmdname}})
   {
-    return $self->spec->{$cmdname}->{$names} if $opt =~ /$names/;
+    return $self->spec->{$cmdname}->{$names} if $opt =~ /\b$names\b/;
   }
   return 0;
 }
@@ -450,8 +512,46 @@ sub _peek
 sub _valid
 {
   my ($self, $index) = @_;
-  croak "_valid() given negative index: $index" if defined $index and $index < 0;
+  confess "_valid() given negative index: $index" if defined $index and $index < 0;
   return (defined $index ? $index : $self->pos) < $self->end;
+}
+
+# Prints the command line with a marker for the current parser position
+sub _show_pos
+{
+  my $self = shift;
+  my $line = $self->cmd->line;
+  my $pointer = '-' x length $line;
+  if ($self->pos == $self->end)
+  {
+    $pointer .= '^';
+  }
+  else
+  {
+    substr $pointer, $self->pos, -1, '^';
+    chop $pointer;
+  }
+  say "$line\n$pointer";
+}
+
+sub _error
+{
+  my ($self, $msg, $pos) = @_;
+  $pos //= $self->pos;
+
+  $self->_set_failed(1);
+
+  # TODO: proper logging
+  say 'Command error: ' . $self->_diagmsg($msg, $pos);
+}
+
+sub _warn
+{
+  my ($self, $msg, $pos) = @_;
+  $pos //= $self->pos;
+
+  # TODO: proper logging
+  say 'Command: ' . $self->_diagmsg($msg, $pos);
 }
 
 sub _diagmsg

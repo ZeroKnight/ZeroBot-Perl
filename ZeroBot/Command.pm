@@ -48,6 +48,16 @@ has expected => (
   init_arg => undef,
 );
 
+# Set by parse(); if the command is fully parsed without error, this will be
+# set to true. Modules should check the validity of a command before
+# attempting to use it.
+has valid => (
+  is       => 'rwp',
+  isa      => Bool,
+  default  => sub { 0 },
+  init_arg => undef,
+);
+
 sub parse
 {
   my $self = shift;
