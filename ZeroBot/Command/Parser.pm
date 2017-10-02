@@ -315,7 +315,7 @@ sub _get_opt
       last unless defined $p; # Nothing else to parse, break out
       if ($p eq '-')
       {
-        $self->_error("Erroneous '-' in option grouping", $p);
+        $self->_error("Erroneous '-' in option grouping", $self->pos + 1);
         return;
       }
       elsif ($p eq '=')
