@@ -214,7 +214,6 @@ sub _get_value
   }
   else
   {
-    $self->_next;
     return $value;
   }
 }
