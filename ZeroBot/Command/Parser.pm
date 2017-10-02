@@ -351,8 +351,9 @@ sub _get_opt_long
 {
   my $self = shift;
   $self->_next(2);
-  my $opt = $self->_get_value(' |=');
+  my $opt = $self->_get_long_name;
 
+  return unless defined $opt;
   if (length $opt < 2)
   {
     $self->_error("Long options must be at least 2 characters");
@@ -430,6 +431,35 @@ sub _get_opt_long
   }
   # Propagate aliases
   $self->_link_aliases($opt);
+}
+
+sub _get_long_name
+{
+  my $self = shift;
+  my $name;
+  my $c = $self->_current;
+  my $start = $self->pos;
+
+  return unless defined $c;
+  while (defined $c)
+  {
+    if ($c =~ /[a-zA-Z0-9-]/)
+    {
+      $name .= $c;
+      $c = $self->_next;
+    }
+    elsif ($c eq ' ' or $c eq '=')
+    {
+      return $name;
+    }
+    else
+    {
+      $self->_set_pos($start);
+      my $badname = $self->_get_value;
+      $self->_error("Erroneous option name '$badname'", $start);
+      return;
+    }
+  }
 }
 
 # Determines if the given option name is in the option spec
