@@ -153,8 +153,8 @@ subtest 'Tokenizing and Extraction' => sub {
     is($cp->cmd->opts->{foo}, undef, 'OPTIONAL type with no value, end of line');
 
     $line = '!test --a';
-    $cp = $token_test->($line); $cp->_next; $cp->cmd->_set_name($cp->_get_value); $cp->_next;
-    ok(!$cp->cmd->valid, 'Long Options must be at least 2 characters');
+    $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {add => OPTVAL_NONE});
+    ok(!$cmd->valid, 'Long Options must be at least 2 characters');
   };
 
   subtest 'Option cluster parsing' => sub {
