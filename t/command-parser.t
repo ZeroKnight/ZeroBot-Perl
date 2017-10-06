@@ -1,5 +1,5 @@
 use strictures 2;
-use Test::More;
+use Test::More tests => 8;
 
 use ZeroBot::Command;
 use ZeroBot::Command::Parser;
@@ -9,7 +9,22 @@ use ZeroBot::Command::Constants;
 use ZeroBot::Core;
 ZeroBot::Core->instance(cfg => ZeroBot::Config->new());
 
-my ($cp, $cmd);
+### Helpers
+my ($cp, $cmd, $line);
+my $token_test = sub {
+  return ZeroBot::Command::Parser->new(
+    cmd  => ZeroBot::Command->new(line => $_[0]),
+    spec => {
+      test => {
+        'a|add' => OPTVAL_REQUIRED,
+        'f|foo' => OPTVAL_OPTIONAL,
+        'b|bar' => OPTVAL_NONE,
+        'q|qux' => OPTVAL_NONE,
+        'lorem-ipsum' => OPTVAL_OPTIONAL,
+      },
+    }
+  );
+};
 
 ### Test fundamental parser "movement" routines
 
@@ -48,22 +63,6 @@ subtest 'Fundamental parser movement' => sub {
 };
 
 ### Test each tokenizing operation
-
-my $line;
-my $token_test = sub {
-  return ZeroBot::Command::Parser->new(
-    cmd  => ZeroBot::Command->new(line => $_[0]),
-    spec => {
-      test => {
-        'a|add' => OPTVAL_REQUIRED,
-        'd|del' => OPTVAL_REQUIRED,
-        'f|foo' => OPTVAL_OPTIONAL,
-        'b|bar' => OPTVAL_NONE,
-        'q|qux' => OPTVAL_NONE,
-      },
-    }
-  );
-};
 
 subtest 'Tokenizing and Extraction' => sub {
   subtest 'Sanity Check' => sub {
@@ -125,38 +124,6 @@ subtest 'Tokenizing and Extraction' => sub {
     is($cp->cmd->opts->{f}, undef, 'OPTIONAL type with no value, end of line');
   };
 
-  subtest 'Long Options parsing' => sub {
-    plan tests => 12;
-    $line = '!test --add 1 --add "2 2" --foo --foo 3 --foo "4 4" --bar --add=5 --add="6 6" --foo=7 --foo="8 8" --foo';
-    $cp = $token_test->($line); $cp->_next; $cp->cmd->_set_name($cp->_get_value); $cp->_next;
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{add}, 1,     'REQUIRED type with value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{add}, '2 2', 'REQUIRED type with quoted value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{foo}, undef, 'OPTIONAL type with no value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{foo}, 3,     'OPTIONAL type with value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{foo}, '4 4', 'OPTIONAL type with quoted value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{bar}, undef, 'NONE type with no value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{add}, 5,     'REQUIRED type with explicit value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{add}, '6 6', 'REQUIRED type with explicit quoted value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{foo}, 7,     'OPTIONAL type with explicit value');
-      $cp->_get_opt_long;
-    is($cp->cmd->opts->{foo}, '8 8', 'OPTIONAL type with explicit quoted value');
-      delete $cp->cmd->opts->{foo}; $cp->_get_opt_long;
-    is($cp->cmd->opts->{foo}, undef, 'OPTIONAL type with no value, end of line');
-
-    $line = '!test --a';
-    $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {add => OPTVAL_NONE});
-    ok(!$cmd->valid, 'Long Options must be at least 2 characters');
-  };
-
   subtest 'Option cluster parsing' => sub {
     plan tests => 24;
     $line = '!test -bq -fb -bf 1 -bf "2 2" -bf -bf=3 -bf="4 4" -ba 5 -ba "6 6" -ba=7 -ba="8 8" -bf';
@@ -198,6 +165,43 @@ subtest 'Tokenizing and Extraction' => sub {
     is($cp->cmd->opts->{b},   undef,  'NONE followed by OPTIONAL type with no value, end of line (1/2)');
     is($cp->cmd->opts->{f},   undef,  'NONE followed by OPTIONAL type with no value, end of line (2/2)');
   };
+
+  subtest 'Long Options parsing' => sub {
+    plan tests => 14;
+    $line = '!test --add 1 --add "2 2" --foo --foo 3 --foo "4 4" --bar --add=5 --add="6 6" --foo=7 --foo="8 8" --foo';
+    $cp = $token_test->($line); $cp->_next; $cp->cmd->_set_name($cp->_get_value); $cp->_next;
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{add}, 1,     'REQUIRED type with value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{add}, '2 2', 'REQUIRED type with quoted value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{foo}, undef, 'OPTIONAL type with no value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{foo}, 3,     'OPTIONAL type with value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{foo}, '4 4', 'OPTIONAL type with quoted value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{bar}, undef, 'NONE type with no value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{add}, 5,     'REQUIRED type with explicit value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{add}, '6 6', 'REQUIRED type with explicit quoted value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{foo}, 7,     'OPTIONAL type with explicit value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{foo}, '8 8', 'OPTIONAL type with explicit quoted value');
+      delete $cp->cmd->opts->{foo}; $cp->_get_opt_long;
+    is($cp->cmd->opts->{foo}, undef, 'OPTIONAL type with no value, end of line');
+
+    $line = '!test --lorem-ipsum --lorem-ipsum 1 --lorem-ipsum=2';
+    $cp = $token_test->($line); $cp->_next; $cp->cmd->_set_name($cp->_get_value); $cp->_next;
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{'lorem-ipsum'}, undef, 'Multi-word name, no value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{'lorem-ipsum'}, 1,     'Multi-word name, with value');
+      $cp->_get_opt_long;
+    is($cp->cmd->opts->{'lorem-ipsum'}, 2,     'Multi-word name, with explicit value');
+  };
 };
 
 ### Test Parser::parse()
@@ -219,7 +223,46 @@ $expected->_set_valid(1);
 is_deeply($cmd, $expected, 'parse() returns expected command object')
   or diag explain $cmd;
 
-# TODO: move these to suitable subtests
+### Ensure error handling works as expected
+
+subtest 'Error handling' => sub {
+  plan tests => 8;
+
+  $line = '!test "foo bar';
+  $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {});
+  ok(!$cmd->valid, 'Catch unterminated strings');
+
+  $line = '!test - foo';
+  $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {a => OPTVAL_NONE});
+  ok(!$cmd->valid, 'Catch missing option character');
+
+  $line = '!test -ab-c';
+  $cmd = ZeroBot::Command->new(line => $line);
+  $cmd->parse(test => {a => OPTVAL_NONE, b => OPTVAL_NONE});
+  ok(!$cmd->valid, 'Catch invalid character in option cluster');
+
+  $line = '!test --a';
+  $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {add => OPTVAL_NONE});
+  ok(!$cmd->valid, 'Long Options must be at least 2 characters');
+
+  $line = '!test --add#';
+  $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {add => OPTVAL_NONE});
+  ok(!$cmd->valid, 'Catch invalid long option name');
+
+  $line = '!test -@';
+  $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {a => OPTVAL_NONE});
+  ok(!$cmd->valid, 'Catch invalid option character');
+
+  $line = '!test -a';
+  $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {a => OPTVAL_REQUIRED});
+  ok(!$cmd->valid, 'Catch missing required option value');
+
+  $line = '!test --add';
+  $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {and => OPTVAL_REQUIRED});
+  ok(!$cmd->valid, 'Catch missing required long option value');
+};
+
+### Everything else; unsorted
 
 $line = '!test -- foo --bar -- -b ar -baz -b=iz --b=ux';
 $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {bar => OPTVAL_NONE});
@@ -231,8 +274,14 @@ $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {b => OPTVAL_NO
 ok(scalar keys %{$cmd->opts} == 0, 'Hyphenated words and quoted options do not parse as options')
   or diag explain $cmd;
 
-$line = '!test "foo bar';
-$cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {});
-ok(!$cmd->valid, 'Catch unterminated strings');
-
-done_testing;
+$line = '!test   foo     --add=   1   -f  2 bar     baz';
+$cmd = ZeroBot::Command->new(line => $line);
+$cmd->parse(test => {f => OPTVAL_OPTIONAL, add => OPTVAL_REQUIRED});
+$expected = ZeroBot::Command->new(line => $line);
+$expected->_set_name('test');
+$expected->_set_args([qw/foo bar baz/]);
+$expected->_set_opts({add => 1, f => 2});
+$expected->_set_expected(1);
+$expected->_set_valid(1);
+is_deeply($cmd, $expected, 'parse() handles extra whitespace properly')
+  or diag explain $cmd;
