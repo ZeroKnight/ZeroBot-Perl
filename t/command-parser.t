@@ -227,7 +227,7 @@ ok(scalar keys %{$cmd->opts} == 0, 'No options parsed after terminator')
   or diag explain $cmd;
 
 $line = '!test foo-bar "-baz" "--bux"';
-$cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {});
+$cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {b => OPTVAL_NONE, bux => OPTVAL_NONE});
 ok(scalar keys %{$cmd->opts} == 0, 'Hyphenated words and quoted options do not parse as options')
   or diag explain $cmd;
 
