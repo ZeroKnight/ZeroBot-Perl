@@ -13,7 +13,7 @@ around 'validate' => sub {
 
   # TODO: proper logging
 
-  foreach my $req_key (qw/Core IRC/)
+  foreach my $req_key (qw/IRC/)
   {
     die "Required key: [$req_key] not found" unless defined $cfg->{$req_key};
     die "Required key: [$req_key] is not a hash" unless ref($cfg->{$req_key}) eq 'HASH';
