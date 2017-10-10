@@ -9,30 +9,13 @@ use Moo;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 
-# Path where ZeroBot's configuration files are stored
-has config_dir => (
+has paths => (
   is      => 'ro',
-  isa     => Path,
-  # TODO: Change this down the line to $XDG_CONFIG_HOME
-  default => sub { path('config') },
-  coerce  => 1,
+  isa     => HashRef,
+  builder => 1,
 );
 
-has core_cfg_path => (
-  is      => 'ro',
-  isa     => Path,
-  default => sub { path('ZeroBot.yaml') },
-  coerce  => 1,
-);
-
-has plugins_cfg_path => (
-  is      => 'ro',
-  isa     => Path,
-  default => sub { path('plugins.yaml') },
-  coerce  => 1,
-);
-
-has core_cfg => (
+has core_file => (
   is       => 'ro',
   isa      => InstanceOf['ZeroBot::Config::File::Core'],
   lazy     => 1,
@@ -40,12 +23,12 @@ has core_cfg => (
   builder  => sub {
     my $self = shift;
     ZeroBot::Config::File::Core->new(
-      filepath => $self->_make_cfg_path($self->core_cfg_path)
+      filepath => $self->_cfg_path($self->paths->{core})
     );
   },
 );
 
-has plugins_cfg => (
+has plugins_file => (
   is       => 'ro',
   isa      => InstanceOf['ZeroBot::Config::File::Plugin'],
   lazy     => 1,
@@ -53,7 +36,7 @@ has plugins_cfg => (
   builder  => sub {
     my $self = shift;
     ZeroBot::Config::File::Plugin->new(
-      filepath => $self->_make_cfg_path($self->plugins_cfg_path)
+      filepath => $self->_cfg_path($self->paths->{plugins})
     );
   },
 );
@@ -65,37 +48,54 @@ has core => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->core_cfg->data->{Core}; },
+  builder  => sub { $_[0]->core_file->data; },
 );
 
-# has plugins => (
-#   is      => 'ro',
-#   isa     => ...,
-#   builder => ...,
-# );
+has plugins => (
+  is      => 'ro',
+  isa     => HashRef,
+  lazy    => 1,
+  init_arg => undef,
+  builder  => sub { $_[0]->plugins_file->data; },
+);
 
 has irc => (
   is       => 'ro',
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->core_cfg->data->{IRC}; },
+  builder  => sub { $_[0]->core_file->data->{IRC}; },
 );
 
 sub BUILD
 {
   my $self = shift;
 
-  # Run *_cfg builders
-  $self->core_cfg;
-  $self->plugins_cfg;
+  # Upgrade raw path strings to Path::Tiny objects
+  while (my ($k, $v) = each %{$self->paths})
+  {
+    $self->paths->{$k} = path($v);
+  }
+
+  # Run builders
+  $self->core_file;
+  $self->plugins_file;
 }
 
-sub _make_cfg_path
+sub _build_paths
+{
+  my $self = shift;
+  return {
+    config  => 'config',
+    core    => 'zerobot.yaml',
+    plugins => 'plugins.yaml',
+  };
+}
+
+sub _cfg_path
 {
   my ($self, $path) = @_;
-  $path = $self->config_dir . "/$path" if $path->is_relative;
-  return $path;
+  return $self->paths->{config}->child($path);
 }
 
 1;

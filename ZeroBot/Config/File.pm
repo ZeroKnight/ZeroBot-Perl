@@ -17,6 +17,14 @@ has filepath => (
   coerce   => 1,
 );
 
+has filename => (
+  is       => 'ro',
+  isa      => Path,
+  init_arg => undef,
+  lazy     => 1,
+  builder  => sub { $_[0]->filepath->basename },
+);
+
 # Holds the deserialized configuration file
 has data => (
   is       => 'rwp',
@@ -26,18 +34,10 @@ has data => (
   builder  => sub { $_[0]->read($_[0]->filepath); },
 );
 
-has filename => (
-  is       => 'ro',
-  isa      => Path,
-  lazy     => 1,
-  init_arg => undef,
-  builder  => sub { $_[0]->filepath->basename },
-);
-
 sub BUILD
 {
   my $self = shift;
-  $self->data; # Run data's builder
+  $self->data;
 }
 
 sub read
@@ -65,7 +65,7 @@ sub write
 sub rehash
 {
   my $self = shift;
-  my $file = $self->path;
+  my $file = $self->filepath;
 
   # TODO: proper logging
   CORE::say "Rehashing config file: $file";
