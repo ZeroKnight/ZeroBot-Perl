@@ -28,13 +28,13 @@ our %EXPORT_TAGS = (
 sub module_register
 {
   my ($module, $syn_type, @events) = @_;
-  ZBCORE->plugin_register($module, $syn_type, @events);
+  ZBCore->plugin_register($module, $syn_type, @events);
 }
 
 sub module_send_event
 {
   my ($event, @args) = @_;
-  ZBCORE->send_event($event, @args);
+  ZBCore->send_event($event, @args);
 }
 
 1;

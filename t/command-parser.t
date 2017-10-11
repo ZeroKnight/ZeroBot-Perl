@@ -5,7 +5,7 @@ use ZeroBot::Command;
 use ZeroBot::Command::Parser;
 use ZeroBot::Command::Constants;
 
-# Access to ZBCORE->cmdchar in parse()
+# Access to ZBCore->cmdchar in parse()
 use ZeroBot::Core;
 ZeroBot::Core->instance(cfg => ZeroBot::Config->new());
 

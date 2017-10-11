@@ -20,6 +20,9 @@ my %import_map = (
   }
 );
 
+# Helpful Core Accessors
+sub ZBCore { require ZeroBot::Core; ZeroBot::Core->instance }
+
 sub import
 {
   my ($class, @symbols) = @_;
@@ -30,14 +33,13 @@ sub import
   strictures->import::into({package => $caller, version => 2});
   Try::Tiny->import::into($caller);
 
-  # Helpful constants
+  # Export Core Accessors
   {
     no strict 'refs';
-    require ZeroBot::Core;
-    *{"$caller\::ZBCORE"} = sub { ZeroBot::Core->instance };
+    *{"$caller\::ZBCore"} = \&ZBCore;
   }
 
-  # Import reqested groups, if any
+  # Import requested groups, if any
   foreach my $symbol (@symbols)
   {
     substr $symbol, 0, 1, '';

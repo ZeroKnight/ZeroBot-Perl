@@ -63,7 +63,7 @@ sub parse
   # First, attempt to extract command name. Complain if the first character is
   # not the command character.
   croak 'Input does not seem to be a command: `'.$self->cmd->line.'`'
-    unless $self->_current eq ZBCORE->cmdchar;
+    unless $self->_current eq ZBCore->cmdchar;
   $self->_next;
 
   # Don't bother parsing the rest of the command if it's not expected

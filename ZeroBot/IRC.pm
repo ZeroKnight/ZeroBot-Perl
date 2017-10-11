@@ -46,7 +46,7 @@ sub _initialize_irc
   # TODO: Proper logging
   say 'Initializing IRC Module';
 
-  my $irc_cfg = ZBCORE->cfg->irc;
+  my $irc_cfg = ZBCore->cfg->irc;
   my ($available, $autoconnecting);
   foreach my $network (keys %{$irc_cfg->{Networks}})
   {
@@ -350,7 +350,7 @@ sub irc_spoke
   my ($self, $msgtype) = splice @_, 0, 2;
   my ($heap, $src, $dests, $body) = @_[HEAP, ARG0 .. ARG2];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $cmdchar = ZBCORE->cmdchar;
+  my $cmdchar = ZBCore->cmdchar;
   my %event = (network => $network, src => $src, dests => $dests);
 
   # Determine whether this is a plain message, or a command

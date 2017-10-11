@@ -78,7 +78,7 @@ has stripped_split => (
 sub _msg_maxlen
 {
   my ($self, $network) = @_;
-  my $n = ZBCORE->networks->{$self->network};
+  my $n = ZBCore->networks->{$self->network};
   my $type = $self->type < MSGTYPE_NOTICE ? 'PRIVMSG' : 'NOTICE';
   my ($nick, $user, $host, $dest) = ($n->nick, $n->user, $n->host, $self->dest);
 
