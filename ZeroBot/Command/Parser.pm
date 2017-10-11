@@ -62,8 +62,12 @@ sub parse
 
   # First, attempt to extract command name. Complain if the first character is
   # not the command character.
-  croak 'Input does not seem to be a command: `'.$self->cmd->line.'`'
-    unless $self->_current eq ZBCore->cmdchar;
+  unless ($self->_current eq ZBCore->cmdchar)
+  {
+    Log->debug('Input does not seem to be a command: `'.$self->cmd->line.'`');
+    $self->_set_failed(1);
+    return $self->cmd;
+  }
   $self->_next;
 
   # Don't bother parsing the rest of the command if it's not expected
@@ -131,7 +135,8 @@ sub parse
     }
     elsif (!defined $c)
     {
-      croak $self->_diagmsg('Unexpected end of input') unless $self->_current;
+      $self->_error('Unexpected end of input') unless $self->_current;
+      return $self->cmd;
     }
     else
     {
@@ -233,7 +238,11 @@ sub _get_opt
   my $opt = $self->_next;
 
   # Make sure we're attemping to parse the correct type of option
-  croak $self->_diagmsg('_get_opt() called on long option') if $opt eq '-';
+  if ($opt eq '-')
+  {
+    $self->_error('_get_opt() called on long option');
+    return;
+  }
 
   if ($opt =~ /[[:alnum:]]/)
   {
@@ -570,8 +579,7 @@ sub _error
 
   $self->_set_failed(1);
 
-  # TODO: proper logging
-  say 'Command error: ' . $self->_diagmsg($msg, $pos);
+  Log->debug('Command error: ' . $self->_diagmsg($msg, $pos));
 }
 
 sub _warn
@@ -579,8 +587,7 @@ sub _warn
   my ($self, $msg, $pos) = @_;
   $pos //= $self->pos;
 
-  # TODO: proper logging
-  say 'Command: ' . $self->_diagmsg($msg, $pos);
+  Log->debug('Command: ' . $self->_diagmsg($msg, $pos));
 }
 
 sub _diagmsg

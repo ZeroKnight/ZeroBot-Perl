@@ -43,8 +43,7 @@ sub _initialize_irc
 {
   my $self = shift;
 
-  # TODO: Proper logging
-  say 'Initializing IRC Module';
+  Log->info('Initializing IRC Module');
 
   my $irc_cfg = ZBCore->cfg->irc;
   my ($available, $autoconnecting);
@@ -58,8 +57,7 @@ sub _initialize_irc
     {
       unless ($server->{Hostname})
       {
-        # TODO: proper logging
-        say "Server defined in $network has no Hostname, trying next.";
+        Log->warning("Server defined in $network has no Hostname, trying next.");
         next;
       }
 
@@ -74,8 +72,7 @@ sub _initialize_irc
     }
     unless (@servers)
     {
-      # TODO: Proper logging
-      say "Network $network does not have any servers defined! Ignoring.";
+      Log->warning("Network $network does not have any servers defined! Ignoring.");
       next;
     }
 
@@ -111,15 +108,12 @@ sub _initialize_irc
     }
     ++$available;
   }
-  # TODO: proper logging
-  say "Initialized $available Networks, $autoconnecting auto-connecting";
+  Log->info("Initialized $available Networks, $autoconnecting auto-connecting");
 }
 
 sub _create_network_session
 {
   my ($self, $network) = @_;
-
-  # TODO: Logging and error check for create()
 
   # Create a session and assign callbacks to handle the IRC messages/events
   # Store the corresponding Network name in the heap
@@ -154,7 +148,6 @@ sub _create_network_session
       irc_ctcp_action => sub { $self->irc_spoke(MSGTYPE_ACTION,  @_) },
     },
   ) or die 'Failed to create IRC component session for Network '.$network->name."\n";
-  # TODO: proper logging
 }
 
 sub Bot_irc_connect_network
@@ -165,8 +158,7 @@ sub Bot_irc_connect_network
   my $network_obj = $self->networks->{$network};
   unless (defined $network_obj)
   {
-    # TODO: Proper logging
-    say "Attempted to connect unknown Network $network";
+    Log->error("Attempted to connect unknown Network $network");
     return MODULE_EAT_ALL;
   }
 
@@ -176,10 +168,9 @@ sub Bot_irc_connect_network
   # TODO: Implement rotating to other defined servers (if specified) if the
   # first choice fails
 
-  # TODO: proper logging
   my $hostname = $network_obj->servers->[0]->hostname;
   my $port = $network_obj->servers->[0]->port;
-  say "Spawning IRC connection for Network $network, Server $hostname on port $port";
+  Log->info("Spawning IRC connection for Network $network, Server $hostname on port $port");
 
   my %spawn_opts = (
     alias      => "IRC_$network",
@@ -197,12 +188,11 @@ sub Bot_irc_connect_network
     # NOTE: PoCo IRC will still subtract nick length from this, however.
     msg_length => 512,
   );
-  $spawn_opts{LocalAddr} = ZBCORE->cfg->core->{BindAddr}
-    if defined ZBCORE->cfg->core->{BindAddr};
+  $spawn_opts{LocalAddr} = ZBCore->cfg->core->{BindAddr}
+    if defined ZBCore->cfg->core->{BindAddr};
 
-  # TODO: proper logging
   my $irc = POE::Component::IRC::State->spawn(%spawn_opts)
-    or say "Failed to spawn() IRC component for Network $network"
+    or Log->error("Failed to spawn() IRC component for Network $network")
     and return MODULE_EAT_ALL;
   $network_obj->set_irc($irc);
 
@@ -278,8 +268,7 @@ sub irc_connected
   my $network = $heap->{network};
   my $netname = $network->name;
 
-  # TODO: proper logging (debug? or info?)
-  say "[$netname] Established connection to $server, now registering...";
+  Log->info("[$netname] Established connection to $server, now registering...");
 }
 
 sub irc_disconnected
@@ -288,8 +277,7 @@ sub irc_disconnected
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $netname = $network->name;
 
-  # TODO: proper logging
-  say "[$netname] Disconnected from $server";
+  Log->info("[$netname] Disconnected from $server");
 
   $network->_set_connected(0);
   module_send_event(disconnected => $network, $server);
@@ -302,9 +290,8 @@ sub irc_welcome
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $netname = $network->name;
 
-  # TODO: proper logging
   my $server = $irc->server_name;
-  say "Network $netname: Successfully connected to $server";
+  Log->info("Network $netname: Successfully connected to $server");
   $network->_set_connected(1);
   $network->_set_connected_at(time);
 
@@ -319,7 +306,7 @@ sub irc_welcome
   # Join configured channels
   foreach my $channel (@{$network->channels})
   {
-    say "[$netname] Joining $channel";
+    Log->info("[$netname] Joining $channel");
     $irc->yield(join => $channel);
   }
 }
@@ -404,8 +391,7 @@ sub irc_error
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $netname = $network->name;
 
-  # TODO: proper logging
-  say "Network $netname error: $errmsg";
+  Log->error("[$netname] Network error: $errmsg");
   module_send_event(server_error => $errmsg);
 }
 
@@ -417,8 +403,7 @@ sub irc_erroneous_nickname
   my $badnick = $err->[0];
   my $netname = $network->name;
 
-  # TODO: proper logging
-  say "[$netname] Erroneous Nickname: $badnick";
+  Log->error("[$netname] Erroneous Nickname: $badnick");
 
   # Let any intersted modules handle this event
   # NOTE: Not sure yet how we'll handle this event return here
@@ -428,8 +413,7 @@ sub irc_erroneous_nickname
   my $nicklen = $irc->isupport('NICKLEN');
   if (defined $nicklen and length $badnick > $nicklen)
   {
-    # TODO: proper logging (debug?)
-    say "[$netname] Truncating nick to fit NICKLEN";
+    Log->warning("[$netname] Truncating nick to fit NICKLEN");
     $irc->yield(nick => substr($badnick, 0, $nicklen));
   }
   else
@@ -439,8 +423,7 @@ sub irc_erroneous_nickname
     # bot event and we can just ignore it and move on.
     if (!$network->connected)
     {
-      # TODO: proper logging
-      say "[$netname] Cannot register connection with erroneous nickname; disconnecting.";
+      Log->error("[$netname] Cannot register connection with erroneous nickname); disconnecting.");
       $irc->disconnect;
     }
   }
@@ -455,8 +438,7 @@ sub irc_nickname_in_use
   my $nick = $network->nick;
   my $netname = $network->name;
 
-  # TODO: proper logging
-  say "[$netname] Nick '$nick' already in use.";
+  Log->error("[$netname] Nick '$nick' already in use.");
 
   # If we're in the registration phase, this event is either due to a ghosted
   # connection with this nick, or the nick is has been stolen (or perhaps the
@@ -495,10 +477,11 @@ sub irc_default
       push(@output, '[' . join(', ', @$arg) . ']');
     }
     else {
+      next unless defined $arg;
       push(@output, "'$arg'");
     }
   }
-  say "@output";
+  print join ' ', @output, "\n";
   return;
 }
 

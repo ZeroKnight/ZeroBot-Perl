@@ -5,9 +5,12 @@ use ZeroBot::Command;
 use ZeroBot::Command::Parser;
 use ZeroBot::Command::Constants;
 
-# Access to ZBCore->cmdchar in parse()
+# Access to ZBCore->cmdchar in parse() and disable logging
 use ZeroBot::Core;
-ZeroBot::Core->instance(cfg => ZeroBot::Config->new());
+ZeroBot::Core->instance(
+  cfg => ZeroBot::Config->new(),
+  log => ZeroBot::Log->new(level => 'none'),
+);
 
 ### Helpers
 my ($cp, $cmd, $line);

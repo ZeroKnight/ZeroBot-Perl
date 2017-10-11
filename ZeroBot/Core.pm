@@ -4,10 +4,8 @@ use strictures 2;
 our $VERSION = '0.005';
 $VERSION = eval $VERSION;
 
-# XXX: Temporary. Move this to the appropriate logging classes
-binmode STDOUT, ':encoding(utf8)';
-
 use ZeroBot::Config;
+use ZeroBot::Log;
 
 use Carp;
 use Try::Tiny;
@@ -30,6 +28,15 @@ has cfg => (
   required => 1,
 );
 
+has log => (
+  is  => 'ro',
+  isa => InstanceOf['ZeroBot::Log'],
+  builder => sub {
+    my $self = shift;
+    ZeroBot::Log->new(level => $self->cfg->core->{Logging}->{Level})
+  },
+);
+
 has cmdchar => (
   is  => 'rwp',
   isa => sub { length($_[0]) == 1 },
@@ -46,7 +53,15 @@ sub init
 
   # TODO: Load core-related config, set up DBI (load actual db here or elsewhere?), etc
 
+  # Set up Core logger
+  $self->log->add_writers(
+    stdout => { type => 'Term' },
+    # TODO: add file writer if cfg->core->{Logging}->{Enabled} is true
+  );
+  # $self->log->level($self->cfg->core->{Logging}->{Level});
+
   # Initialize Syndicator
+  $self->log->verbose('Initializing Core syndicator');
   $self->_syndicator_init(
     prefix        => 'ZBCore_',
     reg_prefix    => 'Module_',
@@ -68,6 +83,8 @@ sub init
 sub syndicator_started
 {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
+
+  $self->log->debug('Core syndicator started');
 
   # Register signal handlers
   $kernel->sig(INT  => 'shutdown');
@@ -93,17 +110,15 @@ sub syndicator_stopped
 {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
 
-  CORE::say 'syndicator_stopped';
-  # TODO: (Debug?) Log that core syndicator is stopping
+  $self->log->debug('Core syndicator stopping...');
 
-  # TODO: (Debug?) Log that POCOIRC objects will now be shutdown
   # TODO: pull quit message from somewhere (or will they already be
-  # disconnected at this point?
-
+  # disconnected at this point?)
   # Shut down all PoCo::IRC sessions
+  $self->log->debug('Shutting down IRC connections');
   $kernel->signal($kernel, 'POCOIRC_SHUTDOWN');
 
-  # TODO: (Debug?) Log that core syndicator has stopped
+  $self->log->debug('Core syndicator stopped')
 }
 
 sub shutdown
@@ -112,7 +127,10 @@ sub shutdown
 
   # TODO ...
 
-  CORE::say 'shutdown';
+  $self->log->warning('Core shutting down...');
+
+  # Handles cleaning up after the syndicator, such as unregistering and
+  # destroying plugins and making sure the Session doesn't stick around
   $self->_syndicator_destroy();
 }
 

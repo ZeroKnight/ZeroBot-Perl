@@ -11,8 +11,6 @@ extends 'ZeroBot::Config::File';
 around 'validate' => sub {
   my ($orig, $self, $cfg) = @_;
 
-  # TODO: proper logging
-
   foreach my $req_key (qw/IRC/)
   {
     die "Required key: [$req_key] not found" unless defined $cfg->{$req_key};

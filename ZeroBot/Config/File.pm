@@ -44,14 +44,11 @@ sub read
 {
   my ($self, $file) = @_;
   my $yaml = try { LoadFile($file) } catch {
-    confess "Failed to load config file: $_";
+    croak "Failed to load config file: $_";
   };
   try { $self->validate($yaml) } catch {
     croak "Failed to validate config file $file: $_";
   };
-
-  # TODO: proper logging
-  CORE::say "Loaded config file: $file";
   return $yaml;
 }
 
@@ -67,8 +64,7 @@ sub rehash
   my $self = shift;
   my $file = $self->filepath;
 
-  # TODO: proper logging
-  CORE::say "Rehashing config file: $file";
+  Log->info("Rehashing config file: $file");
   my $cfg = $self->read($file);
   $self->_set_data($cfg);
 }
@@ -77,9 +73,7 @@ sub validate
 {
   my ($self, $cfg) = @_;
 
-  # TODO: proper logging, make this available only in higher-than-default
-  # logging levels?
-  # CORE::say 'No validation for config file: ', $cfg;
+  # warn 'No validation for config file: ', ...;
   1;
 }
 
