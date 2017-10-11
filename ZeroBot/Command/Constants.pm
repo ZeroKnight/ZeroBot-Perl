@@ -11,6 +11,6 @@ BEGIN { %constants = (
 use constant \%constants;
 
 use parent 'Exporter::Tiny';
-our @EXPORT = (keys %constants);
+our @EXPORT = keys %constants;
 
 1;
