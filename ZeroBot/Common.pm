@@ -15,9 +15,15 @@ my %import_map = (
     'ZeroBot::Util::Types' => ['-all'],
   },
 
-  cmdconsts => {
+  # All constants
+  consts => {
+    'ZeroBot::Command::Constants' => [],
+    # ...
+  },
+
+  consts_cmd => {
     'ZeroBot::Command::Constants' => []
-  }
+  },
 );
 
 # Helpful Core Accessors
