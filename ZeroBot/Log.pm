@@ -135,14 +135,14 @@ sub _log_at_level
   # Check to see if any template variables were specified for tsprintf
   $vars = pop @msg if (ref $msg[-1] eq 'HASH');
 
-  my $expanded = defined $vars ?
+  my $flattened = defined $vars ?
     tsprintf(join('', @msg), $vars) :
     join('', @msg);
 
   foreach my $writer (values %{$self->writers})
   {
     my $obj = $writer->can('_format') ? $writer : $self;
-    my $final = $obj->_format($level, $writer, $expanded, [caller(1)]);
+    my $final = $obj->_format($level, $writer, $flattened, [caller(1)]);
     $writer->write($final) if $self->_should_log($level);
   }
 }
