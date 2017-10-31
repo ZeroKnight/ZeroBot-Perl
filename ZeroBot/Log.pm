@@ -1,8 +1,10 @@
 package ZeroBot::Log;
 
 use ZeroBot::Common -types;
+use ZeroBot::Util qw(tsprintf);
 
 use Carp;
+use POSIX ();
 use Moo;
 
 my %levelmap = (
@@ -99,14 +101,49 @@ sub _should_log
   return $levelmap{$self->level} >= $levelmap{$level};
 }
 
+sub _format
+{
+  my ($self, $level, $writer, $msg, $caller) = @_;
+  # TBD: Turn this into a method?
+  my $output = $writer->has_output_format ?
+    $writer->output_format :
+    $self->output_format;
+  my $time = $writer->has_time_format ?
+    $writer->time_format :
+    $self->time_format;
+
+  # Wrap the log message according to output_format, which can make use of some
+  # optional internal and debugging information as variables.
+  tsprintf($output, {
+    level       => $level,
+    time        => POSIX::strftime($time, localtime),
+
+    caller_pkg  => $caller->[0],
+    caller_file => $caller->[1],
+    caller_line => $caller->[2],
+    caller_sub  => $caller->[3],
+
+    msg         => $msg,
+  }) . "\n";
+}
+
 sub _log_at_level
 {
   my ($self, $level, @msg) = @_;
+  my $vars;
+
+  # Check to see if any template variables were specified for tsprintf
+  $vars = pop @msg if (ref $msg[-1] eq 'HASH');
+
+  my $expanded = defined $vars ?
+    tsprintf(join('', @msg), $vars) :
+    join('', @msg);
+
   foreach my $writer (values %{$self->writers})
   {
-    # TODO: format before passing to write; use writer's _format if it has one
-    # pass [caller(1)] to format
-    $writer->write(@msg, "\n") if $self->_should_log($level);
+    my $obj = $writer->can('_format') ? $writer : $self;
+    my $final = $obj->_format($level, $writer, $expanded, [caller(1)]);
+    $writer->write($final) if $self->_should_log($level);
   }
 }
 
