@@ -6,6 +6,7 @@ use ZeroBot::Util qw(tsprintf);
 use Carp;
 use POSIX ();
 use Moo;
+with 'ZeroBot::Log::Settings';
 
 my %levelmap = (
   'none'    => 0,
@@ -23,20 +24,16 @@ has level => (
   default => sub { 'info' },
 );
 
-# Overwrite ZeroBot::Log::Settings attributes to add a trigger that updates each
-# writers' respective attribute when these master settings are changed.
-has output_format => (
-  is  => 'rw',
-  isa => Str,
+# Override ZeroBot::Log::Settings attributes to add a trigger that updates
+# each writers' respective attribute when these master settings are changed.
+has '+output_format' => (
   trigger => sub {
     my ($self, $val) = @_;
     $_->output_format($val) foreach (values %{$self->writers});
   },
 );
 
-has time_format => (
-  is  => 'rw',
-  isa => Str,
+has '+time_format' => (
   trigger => sub {
     my ($self, $val) = @_;
     $_->time_format($val) foreach (values %{$self->writers});
