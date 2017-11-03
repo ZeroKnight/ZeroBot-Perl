@@ -112,6 +112,7 @@ sub write
     if ($timer > $self->lock_timeout)
     {
       warn "Could not lock log file '", $self->filepath, "'; Message: @msg";
+      push @{$self->_flock_buffer}, "@msg";
       return;
     }
     sleep TIMER_STEP;
