@@ -115,7 +115,7 @@ sub _format
   # Wrap the log message according to output_format, which can make use of some
   # optional internal and debugging information as variables.
   tsprintf($output, {
-    level       => $level,
+    level       => uc $level,
     time        => POSIX::strftime($time, localtime),
 
     caller_pkg  => $caller->[0],
