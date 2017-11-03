@@ -5,6 +5,7 @@ use ZeroBot::Util qw(tsprintf);
 
 use Carp;
 use POSIX ();
+
 use Moo;
 with 'ZeroBot::Log::Settings';
 

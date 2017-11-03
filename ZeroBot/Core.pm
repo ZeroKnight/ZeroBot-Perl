@@ -54,11 +54,18 @@ sub init
   # TODO: Load core-related config, set up DBI (load actual db here or elsewhere?), etc
 
   # Set up Core logger
-  $self->log->add_writers(
-    stdout => { type => 'Term' },
-    # TODO: add file writer if cfg->core->{Logging}->{Enabled} is true
-  );
-  # $self->log->level($self->cfg->core->{Logging}->{Level});
+  my %writers = (stdout => {type => 'Term'});
+  if ($self->cfg->core->{Logging}->{Enabled})
+  {
+    $writers{file} = {
+      type => 'File',
+      filepath => 'logs/' . $self->cfg->core->{Logging}->{File},
+    };
+  }
+  $self->log->add_writers(%writers);
+  $self->log->level($self->cfg->core->{Logging}->{Level});
+
+  $self->log->info("Starting ZeroBot, version $VERSION");
 
   # Initialize Syndicator
   $self->log->verbose('Initializing Core syndicator');
@@ -127,7 +134,7 @@ sub shutdown
 
   # TODO ...
 
-  $self->log->warning('Core shutting down...');
+  $self->log->info('Core shutting down...');
 
   # Handles cleaning up after the syndicator, such as unregistering and
   # destroying plugins and making sure the Session doesn't stick around
