@@ -8,7 +8,7 @@ use Fcntl qw(O_WRONLY O_APPEND O_CREAT :flock);
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 
-use constant TIMER_STEP => 0.015;
+use constant TIMER_STEP => 15; # ms
 
 use Moo;
 with 'ZeroBot::Log::Settings';
@@ -60,8 +60,8 @@ has perms => (
 
 has lock_timeout => (
   is      => 'rw',
-  isa     => Num,
-  default => sub { 3 },
+  isa     => Int,
+  default => sub { 2000 }, # ms
 );
 
 has _flock_buffer => (
@@ -107,6 +107,8 @@ sub write
   # until we get a lock or reach lock_timeout seconds. If flock() times out,
   # store the message in _flock_buffer and attempt to write its contents during
   # the next call to write().
+  # TODO: This isn't the most ideal solution, as the log would then be out of
+  # order. Maybe revisit this at a later time.
   until (flock($self->handle, LOCK_EX | LOCK_NB))
   {
     if ($timer > $self->lock_timeout)
