@@ -147,7 +147,7 @@ sub _create_network_session
       irc_notice      => sub { $self->irc_spoke(MSGTYPE_NOTICE,  @_) },
       irc_ctcp_action => sub { $self->irc_spoke(MSGTYPE_ACTION,  @_) },
     },
-  ) or die 'Failed to create IRC component session for Network '.$network->name."\n";
+  );
 }
 
 sub Bot_irc_connect_network
@@ -192,13 +192,14 @@ sub Bot_irc_connect_network
     if defined ZBCore->cfg->core->{BindAddr};
 
   my $irc = POE::Component::IRC::State->spawn(%spawn_opts)
-    or Log->error("Failed to spawn() IRC component for Network $network")
+    or Log->error("Failed to spawn IRC component for Network $network")
     and return MODULE_EAT_ALL;
   $network_obj->set_irc($irc);
 
   # Create POE::Session for IRC Component
-  $self->_create_network_session($network_obj);
-  # TODO: debug log success here
+  $self->_create_network_session($network_obj)
+    or Log->error("Failed to create session for IRC component for Network $network")
+    and return MODULE_EAT_ALL;
 
   return MODULE_EAT_ALL;
 }
