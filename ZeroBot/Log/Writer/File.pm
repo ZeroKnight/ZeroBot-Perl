@@ -6,27 +6,11 @@ use Time::HiRes 'sleep';
 use IO::Handle qw(autoflush);
 use Fcntl qw(O_WRONLY O_APPEND O_CREAT :flock);
 use Path::Tiny;
-use Types::Path::Tiny qw(Path);
 
 use constant TIMER_STEP => 15; # ms
 
 use Moo;
-with 'ZeroBot::Log::Settings';
-
-has filepath => (
-  is       => 'ro',
-  isa      => Path,
-  required => 1,
-  coerce   => 1,
-);
-
-has filename => (
-  is       => 'ro',
-  isa      => Path,
-  init_arg => undef,
-  lazy     => 1,
-  builder  => sub { $_[0]->filepath->basename },
-);
+with 'ZeroBot::Log::Settings', 'ZeroBot::Util::File';
 
 has handle => (
   is       => 'rwp',

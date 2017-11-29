@@ -8,22 +8,7 @@ use Types::Path::Tiny qw(Path);
 use YAML::XS qw(LoadFile DumpFile);
 
 use Moo;
-
-# Path to the config file itself
-has filepath => (
-  is       => 'ro',
-  isa      => Path,
-  required => 1,
-  coerce   => 1,
-);
-
-has filename => (
-  is       => 'ro',
-  isa      => Path,
-  init_arg => undef,
-  lazy     => 1,
-  builder  => sub { $_[0]->filepath->basename },
-);
+with 'ZeroBot::Util::File';
 
 # Holds the deserialized configuration file
 has data => (
