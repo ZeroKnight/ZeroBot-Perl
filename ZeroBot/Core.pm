@@ -103,14 +103,9 @@ sub syndicator_started
   # Set session alias for Syndicator
   $kernel->alias_set('ZBCore');
 
-  # TODO: Initialize and load modules
-  # XXX: temp shit just to figure this all out
-  # Wrap this up in module_load()
-  print "loading IRC plugin\n";
-  require 'ZeroBot/IRC.pm';
-  my $obj = ZeroBot::IRC->new();
+  # Load Protocol Modules
+  $self->add_protocol($_) for (@{$self->cfg->core->{Protocols}});
 
-  $self->plugin_add('IRC', $obj); # <<< this ends up calling *_register !!
 }
 
 sub syndicator_stopped
@@ -153,6 +148,20 @@ sub ZBCore_plugin_error
   # TODO ...
 
   CORE::say "Plugin error: $err";
+}
+
+sub add_protocol
+{
+  my ($self, $proto) = @_;
+  $self->log->info("Loading $proto protocol");
+
+  try
+  {
+    no strict 'refs';
+    require "ZeroBot/$proto.pm";
+    $self->plugin_add('IRC', "ZeroBot::$proto"->new());
+  }
+  catch { $self->log->error("Failed to load $proto protocol: $_") };
 }
 
 1;

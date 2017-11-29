@@ -43,7 +43,7 @@ sub _initialize_irc
 {
   my $self = shift;
 
-  Log->info('Initializing IRC Module');
+  Log->debug('Initializing IRC Protocol Module');
 
   my $irc_cfg = ZBCore->cfg->irc;
   my ($available, $autoconnecting);

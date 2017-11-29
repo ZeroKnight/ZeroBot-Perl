@@ -11,7 +11,18 @@ extends 'ZeroBot::Config::File';
 around 'validate' => sub {
   my ($orig, $self, $cfg) = @_;
 
-  foreach my $req_key (qw/IRC/)
+  # TODO: Rework all of this a bit
+  #   - See what protocols are defined, make a list; if none, error
+  #   - For each enabled protocol, check for root level node in the config
+  #     matching the protocol name; error if not found
+  #   - Need a modular way for protocols to specify required config nodes and
+  #     their error messages if missing
+  #       - Some kind of file with required nodes and messages?
+
+  my @protocols = @{$cfg->{Protocols}};
+  die 'Must have at least one protocol enabled!' unless @protocols;
+
+  foreach my $req_key (@protocols)
   {
     die "Required key: [$req_key] not found" unless defined $cfg->{$req_key};
     die "Required key: [$req_key] is not a hash" unless ref($cfg->{$req_key}) eq 'HASH';
