@@ -15,8 +15,8 @@ my %levelmap = (
   'error'   => 2,
   'warning' => 3,
   'info'    => 4,
-  'debug'   => 5,
-  'verbose' => 6,
+  'verbose' => 5,
+  'debug'   => 6,
 );
 
 has level => (
