@@ -6,6 +6,8 @@ $VERSION = eval $VERSION;
 use ZeroBot::Common;
 use ZeroBot::Module::File;
 
+use Path::Tiny;
+
 my %constants;
 BEGIN { %constants = (
   MODULE_EAT_NONE   => 1,
@@ -18,7 +20,10 @@ use constant \%constants;
 use parent 'Exporter::Tiny';
 our @EXPORT = ();
 our @EXPORT_OK = (
-  qw(module_register module_send_event module_load),
+  map("module_$_", qw(
+    register send_event load unload reload list_available is_available
+    list_loaded is_loaded
+  )),
   keys %constants,
 );
 our %EXPORT_TAGS = (
@@ -60,6 +65,34 @@ sub module_load
   return $m;
 }
 
+sub module_unload
+{
+  # do we need to make sure to delete the module from %INC?
+  ...
+}
+
+sub module_reload
+{
+  ...
+}
+
+sub module_list_available
+{
+  my $moddir = path("Modules");
+  return map(substr($_->basename, 0, -3), $moddir->children(qr/.+\.pm$/));
+}
+
+sub module_is_available
+{
+  my $module = shift;
+  return path("Modules/$module.pm")->exists;
+}
+
+sub module_list_loaded
+{
+  return keys %{ZBCore->modules};
+}
+
 sub module_is_loaded
 {
   my $module = shift;
@@ -71,10 +104,6 @@ sub module_is_loaded
 __END__
 #### OLD SHIT
 
-
-sub module_reload { ... }
-
-sub module_unload { ... }
 
 sub module_list {
   my ($self, $delim) = @_;

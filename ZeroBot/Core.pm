@@ -7,6 +7,7 @@ $VERSION = eval $VERSION;
 use ZeroBot::Config;
 use ZeroBot::Log;
 use ZeroBot::Module -all;
+use ZeroBot::Util qw(inlist);
 
 use Carp;
 use Try::Tiny;
@@ -110,6 +111,20 @@ sub syndicator_started
   # Load Protocol Modules
   $self->add_protocol($_) for (@{$self->cfg->core->{Protocols}});
 
+  # Load Feature Modules
+  my @available = module_list_available();
+  foreach my $module (@{$self->cfg->modules->{Enabled}})
+  {
+    if (inlist($module, @available))
+    {
+      $self->log->verbose("Loading module: $module");
+      module_load($module);
+    }
+    else
+    {
+      $self->log->warning("Module not found: $module");
+    }
+  }
 }
 
 sub syndicator_stopped
