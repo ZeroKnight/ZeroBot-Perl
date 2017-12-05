@@ -3,7 +3,7 @@ package ZeroBot::Config;
 use ZeroBot::Common -types;
 
 use ZeroBot::Config::File::Core;
-use ZeroBot::Config::File::Plugin;
+use ZeroBot::Config::File::Module;
 
 use Moo;
 use Path::Tiny;
@@ -28,15 +28,15 @@ has core_file => (
   },
 );
 
-has plugins_file => (
+has modules_file => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::Config::File::Plugin'],
+  isa      => InstanceOf['ZeroBot::Config::File::Module'],
   lazy     => 1,
   init_arg => undef,
   builder  => sub {
     my $self = shift;
-    ZeroBot::Config::File::Plugin->new(
-      filepath => $self->_cfg_path($self->paths->{plugins})
+    ZeroBot::Config::File::Module->new(
+      filepath => $self->_cfg_path($self->paths->{modules})
     );
   },
 );
@@ -51,12 +51,12 @@ has core => (
   builder  => sub { $_[0]->core_file->data; },
 );
 
-has plugins => (
+has modules => (
   is      => 'ro',
   isa     => HashRef,
   lazy    => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->plugins_file->data; },
+  builder  => sub { $_[0]->modules_file->data; },
 );
 
 has irc => (
@@ -79,7 +79,7 @@ sub BUILD
 
   # Run builders
   $self->core_file;
-  $self->plugins_file;
+  $self->modules_file;
 }
 
 sub _build_paths
@@ -88,7 +88,7 @@ sub _build_paths
   return {
     config  => 'config',
     core    => 'zerobot.yaml',
-    plugins => 'plugins.yaml',
+    modules => 'modules.yaml',
   };
 }
 

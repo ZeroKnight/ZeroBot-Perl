@@ -16,7 +16,7 @@ has data => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->read($_[0]->filepath); },
+  builder  => sub { $_[0]->read() },
 );
 
 sub BUILD
@@ -27,7 +27,8 @@ sub BUILD
 
 sub read
 {
-  my ($self, $file) = @_;
+  my $self = shift;
+  my $file = $self->filepath;
   my $yaml = try { LoadFile($file) } catch {
     croak "Failed to load config file: $_";
   };
@@ -56,9 +57,8 @@ sub rehash
 
 sub validate
 {
-  my ($self, $cfg) = @_;
-
-  # warn 'No validation for config file: ', ...;
+  my ($self, $data) = @_;
+  Log->warning('No validation for config file: ' . $self->filename) if Log;
   1;
 }
 
