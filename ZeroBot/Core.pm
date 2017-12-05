@@ -6,17 +6,15 @@ $VERSION = eval $VERSION;
 
 use ZeroBot::Config;
 use ZeroBot::Log;
+use ZeroBot::Module -all;
 
 use Carp;
 use Try::Tiny;
 
 use POE;
-# use Math::Random::MT;
-# use Storable qw(dclone);
-# use Text::Wrap ();
 
 use Moo;
-use Types::Standard qw(InstanceOf);
+use Types::Standard qw(HashRef InstanceOf);
 with 'MooX::Singleton';
 
 # PoCo::Syndicator comprises the heart of ZeroBot's module (plugin) system
@@ -29,18 +27,24 @@ has cfg => (
 );
 
 has log => (
-  is  => 'ro',
-  isa => InstanceOf['ZeroBot::Log'],
+  is      => 'ro',
+  isa     => InstanceOf['ZeroBot::Log'],
   builder => sub {
     my $self = shift;
     ZeroBot::Log->new(level => $self->cfg->core->{Logging}->{Level})
   },
 );
 
+has modules => (
+  is      => 'rwp',
+  isa     => HashRef[InstanceOf['ZeroBot::Module::File']],
+  default => sub { {} },
+);
+
 has cmdchar => (
-  is  => 'rwp',
-  isa => sub { length($_[0]) == 1 },
-  lazy => 1,
+  is      => 'rwp',
+  isa     => sub { length($_[0]) == 1 },
+  lazy    => 1,
   builder => sub {
     my $self = shift;
     $self->cfg->core->{CmdChar};

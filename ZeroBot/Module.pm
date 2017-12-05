@@ -4,6 +4,7 @@ our $VERSION = '0.005';
 $VERSION = eval $VERSION;
 
 use ZeroBot::Common;
+use ZeroBot::Module::File;
 
 my %constants;
 BEGIN { %constants = (
@@ -17,7 +18,7 @@ use constant \%constants;
 use parent 'Exporter::Tiny';
 our @EXPORT = ();
 our @EXPORT_OK = (
-  qw(module_register module_send_event),
+  qw(module_register module_send_event module_load),
   keys %constants,
 );
 our %EXPORT_TAGS = (
@@ -37,26 +38,39 @@ sub module_send_event
   ZBCore->send_event($event, @args);
 }
 
+sub module_load
+{
+  my $module = shift;
+
+  # Check whether module is already loaded
+  if (module_is_loaded($module))
+  {
+    Log->warning("Module '$module' already loaded");
+    return undef;
+  }
+
+  # TODO: Remove hardcoded Module directory path
+  my $file = "Modules/$module.pm";
+  my $m = ZeroBot::Module::File->new($file);
+
+  # TBD: plugin_add Plugin name scheme
+  ZBCore->plugin_add("Mod_$module", $m->handle);
+  ZBCore->modules->{$module} = $m;
+
+  return $m;
+}
+
+sub module_is_loaded
+{
+  my $module = shift;
+  return exists ZBCore->modules->{$module};
+}
+
 1;
 
 __END__
 #### OLD SHIT
 
-sub module_load {
-  my ($self, $module) = @_;
-
-  # Check whether module is already loaded
-  if ($self->Modules->{$module}) {
-    carp "Module '$module' already loaded";
-    return undef;
-  }
-
-  my $file = "Modules/$module.pm";
-  try { require $file } catch { croak "Failed to load module '$module': $_"; };
-
-  my $m = "Modules::$module"->new(Bot => $self);
-  $self->Modules->{$module} = $m;
-}
 
 sub module_reload { ... }
 
