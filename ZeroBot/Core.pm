@@ -133,11 +133,14 @@ sub syndicator_stopped
 
   $self->log->debug('Core syndicator stopping...');
 
+  # TODO: Move this somewhere appropriate. Is there an event we can catch in the
+  # protocol modules when the syndicator is dying (syndicator_shutdown)?
+  # Maybe shutdown() can send some kind of shutdown event that protocols catch
   # TODO: pull quit message from somewhere (or will they already be
   # disconnected at this point?)
   # Shut down all PoCo::IRC sessions
-  $self->log->debug('Shutting down IRC connections');
-  $kernel->signal($kernel, 'POCOIRC_SHUTDOWN');
+  # $self->log->debug('Shutting down IRC connections');
+  # $kernel->signal($kernel, 'POCOIRC_SHUTDOWN');
 
   $self->log->debug('Core syndicator stopped')
 }
