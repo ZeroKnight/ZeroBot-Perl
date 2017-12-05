@@ -12,18 +12,21 @@ has name => (
   is   => 'rwp',
   isa  => Str,
   lazy => 1,
+  init_arg => undef,
 );
 
 has author => (
   is   => 'rwp',
   isa  => Str,
   lazy => 1,
+  init_arg => undef,
 );
 
 has description => (
   is   => 'rwp',
   isa  => Str,
   lazy => 1,
+  init_arg => undef,
 );
 
 has handle => (
@@ -44,9 +47,9 @@ sub BUILD
   catch { Log->error("Failed to load module '$module': $_") };
 
   no strict 'refs';
-  $self->_set_name(${"Modules::${module}::Name"});
-  $self->_set_author(${"Modules::${module}::Author"});
-  $self->_set_description(${"Modules::${module}::Description"});
+  $self->_set_name(${"Modules::${module}::Name"} // $module);
+  $self->_set_author(${"Modules::${module}::Author"} // 'Unknown');
+  $self->_set_description(${"Modules::${module}::Description"} // 'N/A');
   $self->_set_handle("Modules::$module"->new());
 }
 
