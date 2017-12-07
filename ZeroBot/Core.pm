@@ -10,7 +10,6 @@ use ZeroBot::Module -all;
 
 use Carp;
 use Try::Tiny;
-use List::Util qw(any);
 
 use POE;
 
@@ -112,10 +111,9 @@ sub syndicator_started
   $self->add_protocol($_) for (@{$self->cfg->core->{Protocols}});
 
   # Load Feature Modules
-  my @available = module_list_available();
   foreach my $module (@{$self->cfg->modules->{Enabled}})
   {
-    if (any { $_ eq $module } @available)
+    if (module_is_available($module))
     {
       $self->log->verbose("Loading module: $module");
       module_load($module);
@@ -123,6 +121,7 @@ sub syndicator_started
     else
     {
       $self->log->warning("Module not found: $module");
+      # TBD: Send an event for this
     }
   }
 }
