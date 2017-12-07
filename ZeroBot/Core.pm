@@ -7,10 +7,10 @@ $VERSION = eval $VERSION;
 use ZeroBot::Config;
 use ZeroBot::Log;
 use ZeroBot::Module -all;
-use ZeroBot::Util qw(inlist);
 
 use Carp;
 use Try::Tiny;
+use List::Util qw(any);
 
 use POE;
 
@@ -115,7 +115,7 @@ sub syndicator_started
   my @available = module_list_available();
   foreach my $module (@{$self->cfg->modules->{Enabled}})
   {
-    if (inlist($module, @available))
+    if (any { $_ eq $module } @available)
     {
       $self->log->verbose("Loading module: $module");
       module_load($module);

@@ -4,14 +4,8 @@ use Carp;
 
 use parent 'Exporter::Tiny';
 our @EXPORT    = qw();
-our @EXPORT_OK = qw(tsprintf inlist);
+our @EXPORT_OK = qw(tsprintf);
 our %EXPORT_TAGS = ();
-
-sub inlist
-{
-  my ($needle, @haystack) = @_;
-  return grep { $_ eq $needle } @haystack;
-}
 
 sub tsprintf
 {
