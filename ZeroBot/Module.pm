@@ -47,10 +47,9 @@ sub module_load
 {
   my $module = shift;
 
-  # Check whether module is already loaded
   if (module_is_loaded($module))
   {
-    Log->warning("Module '$module' already loaded");
+    Log->warning("Module '$module' already loaded, ignoring");
     return undef;
   }
 

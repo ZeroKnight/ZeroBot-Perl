@@ -115,7 +115,7 @@ sub syndicator_started
   {
     if (module_is_available($module))
     {
-      $self->log->warning("Module $module already loaded, ignoring")
+      $self->log->warning("Module '$module' already loaded, ignoring")
         if module_is_loaded($module);
 
       $self->log->verbose("Loading module: $module");
