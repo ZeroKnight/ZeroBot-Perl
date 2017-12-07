@@ -183,7 +183,7 @@ sub add_protocol
   {
     no strict 'refs';
     require "ZeroBot/$proto.pm";
-    $self->plugin_add('IRC', "ZeroBot::$proto"->new());
+    $self->plugin_add('Proto_IRC', "ZeroBot::$proto"->new());
   }
   catch { $self->log->error("Failed to load $proto protocol: $_") };
 }
