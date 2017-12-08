@@ -40,6 +40,10 @@ sub import
   strictures->import::into({package => $caller, version => 2});
   Try::Tiny->import::into($caller);
 
+  # Supress redefine warnings (that strictures also makes fatal) in ZeroBot's
+  # feature modules
+  warnings->unimport::out_of($caller, 'redefine') if $caller =~ /^Modules::/;
+
   # Export Core Accessors
   {
     no strict 'refs';

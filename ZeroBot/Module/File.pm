@@ -34,6 +34,7 @@ has handle => (
   isa      => Object,
   lazy     => 1,
   init_arg => undef,
+  predicate => 1,
 );
 
 sub BUILD
@@ -41,11 +42,10 @@ sub BUILD
   my $self = shift;
   my $module = substr $self->filename, 0, -3;
 
-  # TODO: Remove hardcoded Module directory paths
-
-  try { require $self->filepath }
+  return unless try { require $self->filepath }
   catch { Log->error("Failed to load module '$module': $_") };
 
+  # TODO: Remove hardcoded Module directory paths
   no strict 'refs';
   $self->_set_name(${"Modules::${module}::Name"} // $module);
   $self->_set_author(${"Modules::${module}::Author"} // 'Unknown');

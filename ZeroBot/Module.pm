@@ -49,7 +49,12 @@ sub module_load
 
   if (module_is_loaded($module))
   {
-    Log->warning("Module '$module' already loaded, ignoring");
+    Log->warning("Module '$module' is already loaded");
+    return undef;
+  }
+  unless (module_is_available($module))
+  {
+    Log->error("Module not found: $module");
     return undef;
   }
 
@@ -57,22 +62,50 @@ sub module_load
   my $file = "Modules/$module.pm";
   my $m = ZeroBot::Module::File->new($file);
 
-  # TBD: plugin_add Plugin name scheme
-  ZBCore->plugin_add("Mod_$module", $m->handle);
-  ZBCore->modules->{$module} = $m;
-
-  return $m;
+  if ($m->has_handle)
+  {
+    ZBCore->plugin_add(_module_syndicator_name($module), $m->handle);
+    ZBCore->modules->{$module} = $m;
+    return $m;
+  }
+  else
+  {
+    delete $INC{$file};
+    return undef;
+  }
 }
 
+# NOTE: While it is possible to "fully" unload a Perl module by nuking it from
+# the symbol table, reloading the same module becomes infeasible because Perl
+# doesn't hit the symbol table on every call, which means that after
+# `require`ing the module again, Perl will have stale symbol table mappings
+# until it feels the need to consult the table again. I know of no reasonable
+# solution or workaround to this problem, so runtime unloads will simply not
+# free memory used by the module.
 sub module_unload
 {
-  # do we need to make sure to delete the module from %INC?
-  ...
+  my $module = shift;
+
+  unless (module_is_loaded($module))
+  {
+    Log->warning("Module '$module' is not loaded");
+    return undef;
+  }
+
+  ZBCore->plugin_del(_module_syndicator_name($module));
+
+  # Remove the module from %INC so that `require` actually reads the file again
+  delete $INC{ZBCore->modules->{$module}->filepath};
+
+  delete ZBCore->modules->{$module};
+  return 1;
 }
 
 sub module_reload
 {
-  ...
+  my $module = shift;
+  module_unload($module) or return undef;
+  module_load($module);
 }
 
 sub module_list_available
@@ -84,19 +117,20 @@ sub module_list_available
 sub module_is_available
 {
   my $module = shift;
+  return undef unless defined $module;
   return path("Modules/$module.pm")->exists;
 }
 
-sub module_list_loaded
-{
-  return keys %{ZBCore->modules};
-}
+sub module_list_loaded { return keys %{ZBCore->modules} }
 
 sub module_is_loaded
 {
   my $module = shift;
+  return undef unless defined $module;
   return exists ZBCore->modules->{$module};
 }
+
+sub _module_syndicator_name { return "Mod_$_[0]" }
 
 1;
 

@@ -8,10 +8,8 @@ use ZeroBot::Config;
 use ZeroBot::Log;
 use ZeroBot::Module -all;
 
-use Carp;
-use Try::Tiny;
-
 use POE;
+use Try::Tiny;
 
 use Moo;
 use Types::Standard qw(HashRef InstanceOf);
@@ -115,7 +113,7 @@ sub syndicator_started
   {
     if (module_is_available($module))
     {
-      $self->log->warning("Module '$module' already loaded, ignoring")
+      $self->log->warning("Module '$module' already loaded, check your config for duplicates!")
         if module_is_loaded($module);
 
       $self->log->verbose("Loading module: $module");
