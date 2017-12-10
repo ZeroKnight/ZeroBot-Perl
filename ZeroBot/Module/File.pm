@@ -40,7 +40,7 @@ has handle => (
 sub BUILD
 {
   my $self = shift;
-  my $module = substr $self->filename, 0, -3;
+  my $module = $self->filename_root;
 
   return unless try { require $self->filepath }
   catch { Log->error("Failed to load module '$module': $_") };

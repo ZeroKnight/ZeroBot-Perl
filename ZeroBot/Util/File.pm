@@ -6,6 +6,8 @@ use Moo::Role;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 
+my $re_ext = qr/(?:\.([^.\s]+))+/;
+
 has filepath => (
   is       => 'ro',
   isa      => Path,
@@ -16,9 +18,25 @@ has filepath => (
 has filename => (
   is       => 'ro',
   isa      => Str,
-  init_arg => undef,
   lazy     => 1,
+  init_arg => undef,
   builder  => sub { $_[0]->filepath->basename },
+);
+
+has filename_root => (
+  is       => 'rwp',
+  isa      => Str,
+  lazy     => 1,
+  init_arg => undef,
+  builder  => sub { $_[0]->filepath->basename($re_ext) },
+);
+
+has fileext => (
+  is       => 'ro',
+  isa      => Str,
+  lazy     => 1,
+  init_arg => undef,
+  builder  => sub { $_[0]->filepath->basename =~ $re_ext and $1 },
 );
 
 around BUILDARGS => sub {
