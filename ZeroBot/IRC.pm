@@ -19,7 +19,6 @@ use POE qw(
 );
 
 use Moo;
-use Types::Standard qw(HashRef InstanceOf);
 
 has networks => (
   is  => 'rw',
