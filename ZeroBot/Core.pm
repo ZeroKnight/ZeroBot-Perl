@@ -6,6 +6,7 @@ $VERSION = eval $VERSION;
 
 use ZeroBot::Config;
 use ZeroBot::Log;
+use ZeroBot::Database;
 use ZeroBot::Module -all;
 
 use POE;
@@ -33,6 +34,13 @@ has log => (
   },
 );
 
+has db => (
+  is       => 'rwp',
+  isa      => InstanceOf['ZeroBot::Database'],
+  lazy     => 1,
+  init_arg => undef,
+);
+
 has modules => (
   is      => 'rwp',
   isa     => HashRef[InstanceOf['ZeroBot::Module::File']],
@@ -53,8 +61,6 @@ sub init
 {
   my $self = shift;
 
-  # TODO: Load core-related config, set up DBI (load actual db here or elsewhere?), etc
-
   # Set up Core logger
   my %writers = (stdout => {type => 'Term'});
   if ($self->cfg->core->{Logging}->{Enabled})
@@ -66,6 +72,16 @@ sub init
   }
   $self->log->add_writers(%writers);
   $self->log->level($self->cfg->core->{Logging}->{Level});
+
+  # Initialize Database
+  my %db_opts = (
+    filepath        => $self->cfg->core->{Database}{File},
+    user            => $self->cfg->core->{Database}{User} // '',
+    password        => $self->cfg->core->{Database}{Password} // '',
+    backups_enabled => $self->cfg->core->{Database}{Backup}{Enabled},
+  );
+  $self->log->info('Initializing Database');
+  $self->_set_db(ZeroBot::Database->new(%db_opts));
 
   $self->log->info("Starting ZeroBot, version $VERSION");
 
