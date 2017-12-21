@@ -52,7 +52,8 @@ sub new_connection
     private_module_name => $name,
   );
   Log->debug('Creating new connection to database ', $self->filepath, " for module '$name'");
-  my $dbh = DBI->connect($dsn, '', '', \%attrs) or croak $DBI::errstr;
+  my $dbh = DBI->connect($dsn, $self->user, $self->password, \%attrs)
+    or croak $DBI::errstr;
 
   # Enforce foreign key constraints
   $dbh->do("PRAGMA foreign_keys = ON");
