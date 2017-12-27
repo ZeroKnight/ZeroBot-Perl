@@ -67,7 +67,7 @@ has cmdchar => (
   lazy    => 1,
   builder => sub {
     my $self = shift;
-    $self->cfg->core->{CmdChar};
+    $self->cfg->core->{Core}{CmdChar} // '!';
   },
 );
 
