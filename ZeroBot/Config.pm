@@ -11,8 +11,8 @@ use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 
 my %paths = (
-  core    => 'zerobot.ini',
-  modules => 'modules.ini',
+  core    => 'zerobot.cfg',
+  modules => 'modules.cfg',
 );
 
 has core_file => (
@@ -97,7 +97,7 @@ sub add_protocol_config
   croak 'No protocol specified' unless $protocol;
   $protocol = lc $protocol;
   $self->protocol_files->{$protocol} = ZeroBot::Config::File->new(
-    filepath => $self->_cfg_path("$protocol.ini")
+    filepath => $self->_cfg_path("$protocol.cfg")
   );
 }
 

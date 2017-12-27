@@ -193,7 +193,7 @@ sub _update_data_from_hash
 sub _early_log
 {
   my ($self, $level, $msg) = @_;
-  if ($self->filename eq 'zerobot.ini' or $self->filename eq 'modules.ini')
+  if ($self->filename eq 'zerobot.cfg' or $self->filename eq 'modules.cfg')
   {
     say '['.uc($level)."] [CFG-INIT] $msg";
   }
