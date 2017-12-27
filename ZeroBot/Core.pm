@@ -10,24 +10,38 @@ use ZeroBot::Database;
 use ZeroBot::Module -all;
 
 use POE;
+use Path::Tiny;
 use Try::Tiny;
 
 use Moo;
 use Types::Standard qw(HashRef InstanceOf);
+use Types::Path::Tiny qw(Path);
 with 'MooX::Singleton';
 
 # PoCo::Syndicator comprises the heart of ZeroBot's module (plugin) system
 extends 'POE::Component::Syndicator';
 
+has cfg_dir => (
+  is  => 'ro',
+  isa => Path,
+  coerce => 1,
+  default => sub { path('config') },
+);
+
 has cfg => (
-  is       => 'rw',
+  is       => 'rwp',
   isa      => InstanceOf['ZeroBot::Config'],
-  required => 1,
+  lazy     => 1,
+  builder  => sub {
+    my $self = shift;
+    ZeroBot::Config->new($self->cfg_dir->stringify);
+  },
 );
 
 has log => (
   is      => 'ro',
   isa     => InstanceOf['ZeroBot::Log'],
+  lazy    => 1,
   builder => sub {
     my $self = shift;
     ZeroBot::Log->new(level => $self->cfg->core->{Logging}->{Level})
@@ -56,6 +70,15 @@ has cmdchar => (
     $self->cfg->core->{CmdChar};
   },
 );
+
+sub BUILD
+{
+  my $self = shift;
+
+  # Run builders
+  $self->cfg;
+  $self->log;
+}
 
 sub init
 {
@@ -122,10 +145,32 @@ sub syndicator_started
   $kernel->alias_set('ZBCore');
 
   # Load Protocol Modules
-  $self->add_protocol($_) for (@{$self->cfg->core->{Protocols}});
+  my $protos_loaded = 0;
+  my $val = $self->cfg->core->{Core}{Protocols};
+  my @protos = ref $val eq 'ARRAY' ? @$val : defined $val ? $val : ();
+  unless (@protos)
+  {
+    $self->log->fatal('No protocol modules enabled! At least one protocol must be enabled.');
+    $kernel->call($_[SESSION], 'shutdown');
+    return;
+  }
+  foreach my $p (@protos)
+  {
+    ++$protos_loaded if $self->add_protocol($p);
+  }
+  if ($protos_loaded == 0)
+  {
+    $self->log->fatal('Failed to load any protocol modules! At least one protocol must load successfully.');
+    $kernel->call($_[SESSION], 'shutdown');
+    return;
+  }
+  $self->log->info("Loaded $protos_loaded protocols");
 
   # Load Feature Modules
-  foreach my $module (@{$self->cfg->modules->{Enabled}})
+  my $modules_loaded = 0;
+  $val = $self->cfg->modules->{Modules}{Enabled};
+  my @modules = ref $val eq 'ARRAY' ? @$val : defined $val ? $val : ();
+  foreach my $module (@modules)
   {
     if (module_is_available($module))
     {
@@ -133,7 +178,7 @@ sub syndicator_started
         if module_is_loaded($module);
 
       $self->log->verbose("Loading module: $module");
-      module_load($module);
+      ++$modules_loaded if module_load($module);
     }
     else
     {
@@ -141,6 +186,7 @@ sub syndicator_started
       # TBD: Send an event for this
     }
   }
+  $self->log->info("Loaded $modules_loaded modules");
 }
 
 sub syndicator_stopped
@@ -193,13 +239,19 @@ sub add_protocol
   my ($self, $proto) = @_;
   $self->log->info("Loading $proto protocol");
 
-  try
-  {
+  my $success = try {
     no strict 'refs';
     require "ZeroBot/$proto.pm";
-    $self->plugin_add('Proto_IRC', "ZeroBot::$proto"->new());
+    return $self->plugin_add('Proto_IRC', "ZeroBot::$proto"->new());
   }
-  catch { $self->log->error("Failed to load $proto protocol: $_") };
+  catch
+  {
+    $self->log->error("Failed to load $proto protocol: $_");
+    return undef;
+  };
+  return unless $success;
+  $self->cfg->add_protocol_config($proto);
+  return 1;
 }
 
 1;

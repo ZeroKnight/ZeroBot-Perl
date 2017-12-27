@@ -8,7 +8,6 @@ use ZeroBot::Command::Constants;
 # Access to ZBCore->cmdchar in parse() and disable logging
 use ZeroBot::Core;
 ZeroBot::Core->instance(
-  cfg => ZeroBot::Config->new(),
   log => ZeroBot::Log->new(level => 'none'),
 );
 

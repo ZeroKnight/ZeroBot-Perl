@@ -5,40 +5,47 @@ use ZeroBot::Common -types;
 use ZeroBot::Config::File::Core;
 use ZeroBot::Config::File::Module;
 
+use Carp;
 use Moo;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 
-has paths => (
-  is      => 'ro',
-  isa     => HashRef,
-  builder => 1,
+my %paths = (
+  core    => 'zerobot.ini',
+  modules => 'modules.ini',
 );
 
 has core_file => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::Config::File::Core'],
+  isa      => InstanceOf['ZeroBot::Config::File'],
   lazy     => 1,
   init_arg => undef,
   builder  => sub {
     my $self = shift;
-    ZeroBot::Config::File::Core->new(
-      filepath => $self->_cfg_path($self->paths->{core})
+    ZeroBot::Config::File->new(
+      filepath => $self->_cfg_path($paths{core})
     );
   },
 );
 
 has modules_file => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::Config::File::Module'],
+  isa      => InstanceOf['ZeroBot::Config::File'],
   lazy     => 1,
   init_arg => undef,
   builder  => sub {
     my $self = shift;
-    ZeroBot::Config::File::Module->new(
-      filepath => $self->_cfg_path($self->paths->{modules})
+    ZeroBot::Config::File->new(
+      filepath => $self->_cfg_path($paths{modules})
     );
   },
+);
+
+has protocol_files => (
+  is       => 'rwp',
+  isa      => HashRef[InstanceOf['ZeroBot::Config::File']],
+  init_arg => undef,
+  builder  => sub { +{} },
 );
 
 # Convenient config section accessors
@@ -48,7 +55,7 @@ has core => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->core_file->data; },
+  builder  => sub { $_[0]->core_file->hash },
 );
 
 has modules => (
@@ -56,46 +63,48 @@ has modules => (
   isa     => HashRef,
   lazy    => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->modules_file->data; },
+  builder  => sub { $_[0]->modules_file->hash },
 );
 
-has irc => (
-  is       => 'ro',
-  isa      => HashRef,
-  lazy     => 1,
-  init_arg => undef,
-  builder  => sub { $_[0]->core_file->data->{IRC}; },
-);
+sub proto
+{
+  my ($self, $protocol) = @_;
+  return $self->protocol_files->{$protocol}{hash};
+}
+
+around BUILDARGS => sub {
+  my ($orig, $class, @args) = @_;
+  if (@args == 1 && !ref $args[0])
+  {
+    # XXX: Avoid creating a pointless duplicate member in this class
+    $paths{cfg_dir} = shift @args;
+  }
+  return $class->$orig(@args);
+};
 
 sub BUILD
 {
   my $self = shift;
-
-  # Upgrade raw path strings to Path::Tiny objects
-  while (my ($k, $v) = each %{$self->paths})
-  {
-    $self->paths->{$k} = path($v);
-  }
 
   # Run builders
   $self->core_file;
   $self->modules_file;
 }
 
-sub _build_paths
+sub add_protocol_config
 {
-  my $self = shift;
-  return {
-    config  => 'config',
-    core    => 'zerobot.yaml',
-    modules => 'modules.yaml',
-  };
+  my ($self, $protocol) = @_;
+  croak 'No protocol specified' unless $protocol;
+  $protocol = lc $protocol;
+  $self->protocol_files->{$protocol} = ZeroBot::Config::File->new(
+    filepath => $self->_cfg_path("$protocol.ini")
+  );
 }
 
 sub _cfg_path
 {
   my ($self, $path) = @_;
-  return $self->paths->{config}->child($path);
+  return path($paths{cfg_dir})->child($path);
 }
 
 1;
