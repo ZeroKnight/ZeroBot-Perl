@@ -68,7 +68,7 @@ sub write
 
   Log->info("Writing config '", $self->filename_root, "' to $file");
   $self->_update_data_from_hash();
-  if ($self->obj->data->WriteConfig($file))
+  if ($self->obj->WriteConfig($file))
   {
     Log->error("Failed to write config file '$file'");
     return undef;
@@ -82,7 +82,7 @@ sub rehash
   my $file = $self->filepath;
 
   Log->info("Rehashing config file: $file");
-  if ($self->obj->data->ReadConfig())
+  if ($self->obj->ReadConfig())
   {
     Log->error("Failed to rehash config '$file': @Config::IniFiles::errors");
     return undef;
