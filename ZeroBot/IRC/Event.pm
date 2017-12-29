@@ -36,7 +36,7 @@ has src => (
 
 has src_nick => (
   is        => 'rwp',
-  isa       => IRC_Nick,
+  isa       => IRC_Nickname,
   lazy      => 1,
   predicate => 1,
   init_arg  => undef,
@@ -45,7 +45,7 @@ has src_nick => (
 
 has src_user => (
   is        => 'rwp',
-  isa       => IRC_User,
+  isa       => IRC_Username,
   lazy      => 1,
   predicate => 1,
   init_arg  => undef,

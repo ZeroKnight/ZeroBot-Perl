@@ -4,4 +4,4 @@
 *.sqlite
 
 # Configuration files
-*.yaml
+config/

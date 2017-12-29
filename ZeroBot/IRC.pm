@@ -41,33 +41,42 @@ sub Module_register
 sub _initialize_irc
 {
   my $self = shift;
-
+  my $irc_cfg = ZBCore->cfg->proto('irc');
+  my $defaults = $irc_cfg->{Network_Defaults};
   Log->debug('Initializing IRC Protocol Module');
 
-  my $irc_cfg = ZBCore->cfg->irc;
   my ($available, $autoconnecting);
-  foreach my $network (keys %{$irc_cfg->{Networks}})
+  foreach my $network (keys %{$irc_cfg->{Network}})
   {
-    my $nethash = $irc_cfg->{Networks}{$network};
+    my $nethash = $irc_cfg->{Network}{$network};
+    my @channels = ZBCore->cfg->get_as_list($nethash->{Channels});
+    my @servers;
 
     # Create ZeroBot::IRC::Server object(s)
-    my @servers;
-    foreach my $server (@{$nethash->{Servers}})
+    my $n = 1;
+    foreach my $server (ZBCore->cfg->get_as_list($nethash->{Servers}))
     {
-      unless ($server->{Hostname})
-      {
-        Log->warning("Server defined in $network has no Hostname, trying next.");
-        next;
-      }
+      my ($hostname, $port) = split /:/, $server;
+      my $servhash = $nethash->{"Server$n"};
+      my %server_opts = (hostname => $hostname, port => $port);
 
-      # Fall back to constructor defaults if needed
-      my %server_opts = (hostname => $server->{Hostname});
-      $server_opts{port}     = $server->{Port} if defined $server->{Port};
-      $server_opts{password} = $server->{Password} if defined $server->{Password};
-      $server_opts{ssl}      = $server->{UseSSL} if defined $server->{UseSSL};
-      $server_opts{ipv6}     = $server->{UseIPv6} if defined $server->{UseIPv6};
+      # Helper sub to prepare %server_opts. Assigns values from the most
+      # specific section first, moving upwards as needed. If there's no setting
+      # at all, let the constructor handle it.
+      my $prep_opts = sub {
+        my ($attr, $key) = @_;
+        my $val = $servhash->{$key} // $nethash->{$key} // $defaults->{$key};
+        $server_opts{$attr} = $val if defined $val;
+      };
+      $prep_opts->(password => 'Password');
+      $prep_opts->(ssl      => 'UseSSL');
+      $prep_opts->(ipv6     => 'UseIPv6');
+
+      # Set default port if unspecified
+      $server_opts{port} //= $server_opts{ssl} ? 6697 : 6667;
 
       push @servers, ZeroBot::IRC::Server->new(%server_opts);
+      ++$n;
     }
     unless (@servers)
     {
@@ -78,32 +87,31 @@ sub _initialize_irc
     # Create ZeroBot::IRC::Network object
     my %network_opts = (
       name     => $network,
-      servers  => [@servers],
-      channels => [ @{$nethash->{Channels}} ],
+      servers  => [ @servers ],
+      channels => [ map { [split / /, $_, 2] } @channels ],
     );
 
-    # Fall back to main Identity, or even a hard default if needed
-    my $nick  = $nethash->{Nick}  // $irc_cfg->{Identity}{Nick}  // 'ZeroBot';
-    my $user  = $nethash->{User}  // $irc_cfg->{Identity}{User}  // 'zerobot';
-    my $gecos = $nethash->{Gecos} // $irc_cfg->{Identity}{Gecos} // "ZeroBot v$VERSION";
-
-    # Fall back to constructor defaults if needed
-    $network_opts{nick}  = $nick if defined $nick;
-    $network_opts{user}  = $user if defined $user;
-    $network_opts{gecos} = $gecos if defined $gecos;
-    $network_opts{umode} = $nethash->{UMode} if defined $nethash->{UMode};
+    # Helper sub to prepare %network_opts. Similar to the one above for servers.
+    my $prep_opts = sub {
+      my ($attr, $key) = @_;
+      my $val = $nethash->{$key} // $defaults->{$key};
+      $network_opts{$attr} = $val if defined $val;
+    };
+    $prep_opts->(nick  => 'Nick');
+    $prep_opts->(user  => 'User');
+    $prep_opts->(gecos => 'Gecos');
+    $prep_opts->(umode => 'UMode');
 
     $self->networks->{$network} = ZeroBot::IRC::Network->new(%network_opts);
 
     # Connect any Networks set to AutoConnect
-    if ($irc_cfg->{Networks}{$network}{AutoConnect})
+    if ($nethash->{AutoConnect} // $irc_cfg->{Network_Defaults}{AutoConnect})
     {
-      ++$autoconnecting;
-
       # Actual connection is dispatched, so that POE can handle it like any
       # other event, and so that initialization is separate from connection,
       # which enables modules to reconnect a given network.
       module_send_event(irc_connect_network => $network);
+      ++$autoconnecting;
     }
     ++$available;
   }
@@ -173,8 +181,8 @@ sub Bot_irc_connect_network
 
   my %spawn_opts = (
     alias      => "IRC_$network",
-    Server     => $network_obj->servers->[0]->hostname,
-    Port       => $network_obj->servers->[0]->port,
+    Server     => $hostname,
+    Port       => $port,
     Password   => $network_obj->servers->[0]->password,
     Nick       => $network_obj->nick,
     Username   => $network_obj->user,
@@ -306,8 +314,9 @@ sub irc_welcome
   # Join configured channels
   foreach my $channel (@{$network->channels})
   {
-    Log->info("[$netname] Joining $channel");
-    $irc->yield(join => $channel);
+    my ($name, $key) = @$channel;
+    Log->info("[$netname] Joining $name");
+    $irc->yield(join => $name, $key ? $key : ());
   }
 }
 
