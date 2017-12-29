@@ -9,7 +9,7 @@ use ZeroBot::Util::IRC qw(/^is_valid_/i);
 use IRC::Utils qw(is_valid_nick_name);
 use Moo;
 
-# WTF: In this class, if we use anything other than handwritten a 'isa' and the
+# WTF: In this class, if we use anything other than a handwritten 'isa' and the
 # constraint fails, Type::Tiny passes an error message with a null byte, garbage
 # memory and random contents of B::Deparse.pm. I have no idea, but after over
 # a day of narrowing it down to this specific trigger, I no longer have any
