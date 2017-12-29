@@ -108,6 +108,12 @@ sub add_protocol_config
   return 1;
 }
 
+sub get_as_list
+{
+  my ($self, $val) = @_;
+  return ref $val eq 'ARRAY' ? @$val : defined $val ? $val : ();
+}
+
 sub _cfg_path
 {
   my ($self, $path) = @_;

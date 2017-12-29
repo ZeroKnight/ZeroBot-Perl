@@ -146,8 +146,7 @@ sub syndicator_started
 
   # Load Protocol Modules
   my $protos_loaded = 0;
-  my $val = $self->cfg->core->{Core}{Protocols};
-  my @protos = ref $val eq 'ARRAY' ? @$val : defined $val ? $val : ();
+  my @protos = $self->cfg->get_as_list($self->cfg->core->{Core}{Protocols});
   unless (@protos)
   {
     $self->log->fatal('No protocol modules enabled! At least one protocol must be enabled.');
@@ -168,8 +167,7 @@ sub syndicator_started
 
   # Load Feature Modules
   my $modules_loaded = 0;
-  $val = $self->cfg->modules->{Modules}{Enabled};
-  my @modules = ref $val eq 'ARRAY' ? @$val : defined $val ? $val : ();
+  my @modules = $self->cfg->get_as_list($self->cfg->modules->{Modules}{Enabled});
   foreach my $module (@modules)
   {
     if (module_is_available($module))
