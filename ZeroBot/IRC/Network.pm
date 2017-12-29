@@ -36,13 +36,13 @@ has channels => (
 
 has nick => (
   is      => 'rwp',
-  isa     => IRC_Nick,
+  isa     => IRC_Nickname,
   default => 'ZeroBot',
 );
 
 has user => (
   is      => 'rwp',
-  isa     => IRC_User,
+  isa     => IRC_Username,
   default => 'zerobot',
 );
 
