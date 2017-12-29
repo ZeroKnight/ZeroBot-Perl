@@ -96,9 +96,16 @@ sub add_protocol_config
   my ($self, $protocol) = @_;
   croak 'No protocol specified' unless $protocol;
   $protocol = lc $protocol;
-  $self->protocol_files->{$protocol} = ZeroBot::Config::File->new(
+  my $cfg = ZeroBot::Config::File->new(
     filepath => $self->_cfg_path("$protocol.cfg")
   );
+  unless (defined $cfg->data)
+  {
+    Log->error('Failed to load protocol configuration');
+    return undef;
+  }
+  $self->protocol_files->{$protocol} = $cfg;
+  return 1;
 }
 
 sub _cfg_path

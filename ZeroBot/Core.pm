@@ -239,6 +239,7 @@ sub add_protocol
   my ($self, $proto) = @_;
   $self->log->info("Loading $proto protocol");
 
+  $self->cfg->add_protocol_config($proto) or return undef;
   my $success = try {
     no strict 'refs';
     require "ZeroBot/$proto.pm";
@@ -250,7 +251,6 @@ sub add_protocol
     return undef;
   };
   return unless $success;
-  $self->cfg->add_protocol_config($proto);
   return 1;
 }
 
