@@ -65,6 +65,10 @@ sub import
     while (my ($package, $args) = each %{$import_map{$symbol}})
     {
       my $file = $package =~ s|::|/|gr;
+
+      # Avoid passing barewords to import if they don't start with '-'
+      @$args = map { substr($_, 0, 1) eq '-' ? $_ : "'$_'" } @$args;
+
       require "$file.pm";
       {
         local $@;
