@@ -35,8 +35,15 @@ sub obj { tied %{$_[0]->data} }
 sub read
 {
   my $self = shift;
-  my $file = $self->filepath->stringify;
+  my $file = $self->filepath->stringify();
   my %cfg;
+
+  unless ($self->filepath->exists())
+  {
+    $self->_early_log('warning', "Could not load config file '$file'; file not found.");
+    return {};
+  }
+
   try {
     tie %cfg, 'Config::IniFiles', (
       -file          => $file,
@@ -51,7 +58,7 @@ sub read
   unless (%cfg)
   {
     $self->_early_log('error', "Failed to load config file '$file': @Config::IniFiles::errors");
-    return undef;
+    return {};
   }
 
   # try { $self->validate($yaml) } catch {
@@ -104,6 +111,8 @@ sub _build_hash
 {
   my $self = shift;
   my $hash = {};
+
+  return {} unless keys %{$self->data};
 
   # Trim whitespace surrounding values and transform any values representing
   # a list into an arrayref

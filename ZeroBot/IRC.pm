@@ -45,7 +45,7 @@ sub _initialize_irc
   my $defaults = $irc_cfg->{Network_Defaults};
   Log->debug('Initializing IRC Protocol Module');
 
-  my ($available, $autoconnecting);
+  my ($available, $autoconnecting) = (0, 0);
   foreach my $network (keys %{$irc_cfg->{Network}})
   {
     my $nethash = $irc_cfg->{Network}{$network};
@@ -115,7 +115,17 @@ sub _initialize_irc
     }
     ++$available;
   }
-  Log->info("Initialized $available Networks, $autoconnecting auto-connecting");
+  if ($available)
+  {
+    # TODO: plural
+    Log->info("Initialized $available Networks, $autoconnecting auto-connecting");
+  }
+  else
+  {
+    # TODO: Down the line when ZeroBot has a CLI, allow the user to manually
+    # add a network here. For now, just do nothing and let Syndicator kill us.
+    Log->warning("No IRC networks defined");
+  }
 }
 
 sub _create_network_session

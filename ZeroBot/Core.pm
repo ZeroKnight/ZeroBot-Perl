@@ -44,7 +44,8 @@ has log => (
   lazy    => 1,
   builder => sub {
     my $self = shift;
-    ZeroBot::Log->new(level => $self->cfg->core->{Logging}->{Level})
+    my $level = $self->cfg->core->{Logging}->{Level};
+    ZeroBot::Log->new(defined $level ? (level => $level) : ());
   },
 );
 
@@ -94,14 +95,13 @@ sub init
     };
   }
   $self->log->add_writers(%writers);
-  $self->log->level($self->cfg->core->{Logging}->{Level});
 
   # Initialize Database
   my %db_opts = (
-    filepath        => $self->cfg->core->{Database}{File},
+    filepath        => $self->cfg->core->{Database}{File} // 'ZeroBot.sqlite',
     user            => $self->cfg->core->{Database}{User} // '',
     password        => $self->cfg->core->{Database}{Password} // '',
-    backups_enabled => $self->cfg->core->{Database}{Backup}{Enabled},
+    backups_enabled => $self->cfg->core->{Database}{Backup}{Enabled} // 1,
   );
   $self->log->info('Initializing Database');
   $self->_set_db(ZeroBot::Database->new(%db_opts));

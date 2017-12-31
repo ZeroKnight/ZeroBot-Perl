@@ -22,7 +22,7 @@ my %levelmap = (
 has level => (
   is  => 'rw',
   isa => sub { exists $levelmap{$_[0]} },
-  default => sub { 'info' },
+  default => 'info',
 );
 
 # Override ZeroBot::Log::Settings attributes to add a trigger that updates
