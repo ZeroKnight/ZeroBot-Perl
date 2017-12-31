@@ -3,7 +3,7 @@ package ZeroBot::IRC;
 our $VERSION = "0.005";
 $VERSION = eval $VERSION;
 
-use ZeroBot::Common -types;
+use ZeroBot::Common -types, -string;
 
 use ZeroBot::Module -all;
 use ZeroBot::IRC::Network;
@@ -117,8 +117,7 @@ sub _initialize_irc
   }
   if ($available)
   {
-    # TODO: plural
-    Log->info("Initialized $available Networks, $autoconnecting auto-connecting");
+    Log->info(pluralize("Initialized %d Networks, $autoconnecting auto-connecting", $available));
   }
   else
   {
@@ -322,10 +321,13 @@ sub irc_welcome
   # module_send_event(connected => ...);
 
   # Join configured channels
-  foreach my $channel (@{$network->channels})
+  my @channels = @{$network->channels};
+  my @list = map $_->[0], @channels;
+  local $" = ', ';
+  Log->info(pluralize("[$netname] Joining %d channel(s): @list", @channels));
+  foreach my $channel (@channels)
   {
     my ($name, $key) = @$channel;
-    Log->info("[$netname] Joining $name");
     $irc->yield(join => $name, $key ? $key : ());
   }
 }

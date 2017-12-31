@@ -12,6 +12,7 @@ use ZeroBot::Module -all;
 use POE;
 use Path::Tiny;
 use Try::Tiny;
+use Text::Pluralize;
 
 use Moo;
 use Types::Standard qw(HashRef InstanceOf);
@@ -163,7 +164,7 @@ sub syndicator_started
     $kernel->call($_[SESSION], 'shutdown');
     return;
   }
-  $self->log->info("Loaded $protos_loaded protocols");
+  $self->log->info(pluralize("Loaded %d protocol(s)", $protos_loaded));
 
   # Load Feature Modules
   my $modules_loaded = 0;
@@ -184,7 +185,7 @@ sub syndicator_started
       # TBD: Send an event for this
     }
   }
-  $self->log->info("Loaded $modules_loaded modules");
+  $self->log->info(pluralize("Loaded %d module(s)", $modules_loaded));
 }
 
 sub syndicator_stopped
