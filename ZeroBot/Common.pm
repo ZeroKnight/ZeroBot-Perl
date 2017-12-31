@@ -15,6 +15,11 @@ my %import_map = (
     'ZeroBot::Util::Types' => ['-all'],
   },
 
+  string => {
+    'ZeroBot::Util' => [qw/tsprintf/],
+    'Text::Pluralize' => [],
+  },
+
   # All constants
   consts => {
     'ZeroBot::Command::Constants' => [],
