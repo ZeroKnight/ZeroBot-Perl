@@ -33,6 +33,7 @@ my %import_map = (
 
 # Helpful Core Accessors
 sub ZBCore { require ZeroBot::Core; ZeroBot::Core->instance }
+sub Config { ZBCore->cfg }
 sub Log    { ZBCore->log }
 
 sub import
@@ -53,6 +54,7 @@ sub import
   {
     no strict 'refs';
     *{"$caller\::ZBCore"} = \&ZBCore;
+    *{"$caller\::Config"} = \&Config;
     *{"$caller\::Log"}    = \&Log;
   }
 

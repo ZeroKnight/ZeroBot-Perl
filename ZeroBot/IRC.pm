@@ -27,6 +27,13 @@ has networks => (
   default  => sub{ +{} },
 );
 
+has cfg => (
+  is       => 'ro',
+  isa      => HashRef,
+  init_arg => undef,
+  builder  => sub { Config->proto('irc') },
+);
+
 sub Module_register
 {
   my $self = shift;
@@ -41,14 +48,13 @@ sub Module_register
 sub _initialize_irc
 {
   my $self = shift;
-  my $irc_cfg = ZBCore->cfg->proto('irc');
-  my $defaults = $irc_cfg->{Network_Defaults};
+  my $defaults = $self->cfg->{Network_Defaults};
   Log->debug('Initializing IRC Protocol Module');
 
   my ($available, $autoconnecting) = (0, 0);
-  foreach my $network (keys %{$irc_cfg->{Network}})
+  foreach my $network (keys %{$self->cfg->{Network}})
   {
-    my $nethash = $irc_cfg->{Network}{$network};
+    my $nethash = $self->cfg->{Network}{$network};
     my @channels = ZBCore->cfg->get_as_list($nethash->{Channels});
     my @servers;
 
@@ -106,7 +112,7 @@ sub _initialize_irc
     $self->networks->{$network} = ZeroBot::IRC::Network->new(%network_opts);
 
     # Connect any Networks set to AutoConnect
-    if ($nethash->{AutoConnect} // $irc_cfg->{Network_Defaults}{AutoConnect})
+    if ($nethash->{AutoConnect} // $self->cfg->{Network_Defaults}{AutoConnect})
     {
       # Actual connection is dispatched, so that POE can handle it like any
       # other event, and so that initialization is separate from connection,
@@ -205,8 +211,8 @@ sub Bot_irc_connect_network
     # NOTE: PoCo IRC will still subtract nick length from this, however.
     msg_length => 512,
   );
-  $spawn_opts{LocalAddr} = ZBCore->cfg->core->{BindAddr}
-    if defined ZBCore->cfg->core->{BindAddr};
+  $spawn_opts{LocalAddr} = $self->cfg->core->{BindAddr}
+    if defined $self->cfg->core->{BindAddr};
 
   my $irc = POE::Component::IRC::State->spawn(%spawn_opts)
     or Log->error("Failed to spawn IRC component for Network $network")
