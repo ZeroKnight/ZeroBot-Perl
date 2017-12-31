@@ -241,7 +241,7 @@ sub add_protocol
   my $success = try {
     no strict 'refs';
     require "ZeroBot/$proto.pm";
-    return $self->plugin_add('Proto_IRC', "ZeroBot::$proto"->new());
+    return $self->plugin_add("Proto_$proto", "ZeroBot::$proto"->new());
   }
   catch
   {
