@@ -202,13 +202,13 @@ sub _update_data_from_hash
 sub _early_log
 {
   my ($self, $level, $msg) = @_;
-  if ($self->filename eq 'zerobot.cfg' or $self->filename eq 'modules.cfg')
+  if (ZeroBot::Core->_has_instance())
   {
-    say '['.uc($level)."] [CFG-INIT] $msg";
+    Log->$level($msg);
   }
   else
   {
-    Log->$level($msg);
+    say '['.uc($level)."] [CFG-INIT] $msg";
   }
 }
 
