@@ -65,6 +65,20 @@ has nick => (
   default => 'ZeroBot',
 );
 
+# Holds a list of alternate nicks to try at connection registration if the
+# primary one is in use
+has alt_nicks => (
+  is  => 'rw',
+  isa => sub {
+    die "Must be an array of Nicknames" unless ref $_[0] eq 'ARRAY';
+    foreach my $nick (@{$_[0]})
+    {
+      is_valid_nick_name($nick) or die "Invalid nickname: $nick"
+    }
+  },
+  default => sub { [] }
+);
+
 has user => (
   is      => 'rwp',
   isa     => sub {
@@ -106,5 +120,21 @@ has connected_at => (
   isa      => Int,
   init_arg => undef,
 );
+
+sub get_next_alt
+{
+  my ($self, $reset) = @_;
+  state $lastindex = -1;
+  if (defined $reset)
+  {
+    $lastindex = -1;
+  }
+  else
+  {
+    return unless @{$self->alt_nicks};
+    my $next = $lastindex >= @{$self->alt_nicks} ? $lastindex : ++$lastindex;
+    return $self->alt_nicks->[$next];
+  }
+}
 
 1;

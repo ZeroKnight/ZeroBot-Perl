@@ -97,10 +97,11 @@ sub _initialize_irc
       my $val = $nethash->{$key} // $defaults->{$key};
       $network_opts{$attr} = $val if defined $val;
     };
-    $prep_opts->(nick  => 'Nick');
-    $prep_opts->(user  => 'User');
-    $prep_opts->(gecos => 'Gecos');
-    $prep_opts->(umode => 'UMode');
+    $prep_opts->(nick      => 'Nick');
+    $prep_opts->(alt_nicks => 'AltNicks');
+    $prep_opts->(user      => 'User');
+    $prep_opts->(gecos     => 'Gecos');
+    $prep_opts->(umode     => 'UMode');
 
     $self->networks->{$network} = ZeroBot::IRC::Network->new(%network_opts);
 
@@ -330,6 +331,9 @@ sub irc_welcome
     my ($name, $key) = @$channel;
     $irc->yield(join => $name, $key ? $key : ());
   }
+
+  # Reset Alternate Nick index
+  $network->get_next_alt(1);
 }
 
 sub irc_join
@@ -467,20 +471,23 @@ sub irc_nickname_in_use
   # interested modules take over.
   if (!$network->connected)
   {
-    my $newnick;
-    if ($nick =~ /__$/) # Don't get crazy with the underscores
+    my $newnick = $network->get_next_alt();
+    unless (defined $newnick)
     {
-      $newnick = substr $nick, 0, -1;
-      $newnick .= '1';
-    }
-    elsif ($nick =~ /_(\d)$/)
-    {
-      $newnick = substr $nick, 0, -1;
-      $newnick .= $1 + 1;
-    }
-    else
-    {
-      $newnick = "${nick}_";
+      if ($nick =~ /__$/) # Don't get crazy with the underscores
+      {
+        $newnick = substr $nick, 0, -1;
+        $newnick .= '1';
+      }
+      elsif ($nick =~ /_(\d)$/)
+      {
+        $newnick = substr $nick, 0, -1;
+        $newnick .= $1 + 1;
+      }
+      else
+      {
+        $newnick = "${nick}_";
+      }
     }
     $network->_set_nick($newnick);
     $irc->yield(nick => $newnick);
