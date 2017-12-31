@@ -215,7 +215,7 @@ sub _get_value
   if ($in_string)
   {
     $self->_error('Unterminated string starting', $quote_pos);
-    return undef;
+    return;
   }
   else
   {
@@ -530,7 +530,7 @@ sub _next
   $n //= 1;
   foreach (1..$n)
   {
-    return undef unless $self->_valid;
+    return unless $self->_valid;
     $self->_set_pos($self->pos + 1);
   }
   return $self->_current;

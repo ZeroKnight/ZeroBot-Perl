@@ -45,7 +45,7 @@ has log => (
   lazy    => 1,
   builder => sub {
     my $self = shift;
-    my $level = $self->cfg->core->{Logging}->{Level};
+    my $level = $self->cfg->core->{Logging}{Level};
     ZeroBot::Log->new(defined $level ? (level => $level) : ());
   },
 );
@@ -60,7 +60,7 @@ has db => (
 has modules => (
   is      => 'rwp',
   isa     => HashRef[InstanceOf['ZeroBot::Module::File']],
-  default => sub { {} },
+  default => sub { +{} },
 );
 
 has cmdchar => (
@@ -88,11 +88,11 @@ sub init
 
   # Set up Core logger
   my %writers = (stdout => {type => 'Term'});
-  if ($self->cfg->core->{Logging}->{Enabled})
+  if ($self->cfg->core->{Logging}{Enabled})
   {
     $writers{file} = {
       type => 'File',
-      filepath => 'logs/' . $self->cfg->core->{Logging}->{File},
+      filepath => 'logs/' . $self->cfg->core->{Logging}{File},
     };
   }
   $self->log->add_writers(%writers);
@@ -238,7 +238,7 @@ sub add_protocol
   my ($self, $proto) = @_;
   $self->log->info("Loading $proto protocol");
 
-  $self->cfg->add_protocol_config($proto) or return undef;
+  $self->cfg->add_protocol_config($proto) or return;
   my $success = try {
     no strict 'refs';
     require "ZeroBot/$proto.pm";
@@ -247,7 +247,7 @@ sub add_protocol
   catch
   {
     $self->log->error("Failed to load $proto protocol: $_");
-    return undef;
+    return;
   };
   return unless $success;
   return 1;

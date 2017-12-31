@@ -50,12 +50,12 @@ sub module_load
   if (module_is_loaded($module))
   {
     Log->warning("Module '$module' is already loaded");
-    return undef;
+    return;
   }
   unless (module_is_available($module))
   {
     Log->error("Module not found: $module");
-    return undef;
+    return;
   }
 
   # TODO: Remove hardcoded Module directory path
@@ -71,7 +71,7 @@ sub module_load
   else
   {
     delete $INC{$file};
-    return undef;
+    return;
   }
 }
 
@@ -89,7 +89,7 @@ sub module_unload
   unless (module_is_loaded($module))
   {
     Log->warning("Module '$module' is not loaded");
-    return undef;
+    return;
   }
 
   ZBCore->plugin_del(_module_syndicator_name($module));
@@ -104,7 +104,7 @@ sub module_unload
 sub module_reload
 {
   my $module = shift;
-  module_unload($module) or return undef;
+  module_unload($module) or return;
   module_load($module);
 }
 
@@ -117,7 +117,7 @@ sub module_list_available
 sub module_is_available
 {
   my $module = shift;
-  return undef unless defined $module;
+  return unless defined $module;
   return path("Modules/$module.pm")->exists;
 }
 
@@ -126,7 +126,7 @@ sub module_list_loaded { return keys %{ZBCore->modules} }
 sub module_is_loaded
 {
   my $module = shift;
-  return undef unless defined $module;
+  return unless defined $module;
   return exists ZBCore->modules->{$module};
 }
 

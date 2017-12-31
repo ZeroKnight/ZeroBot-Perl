@@ -45,7 +45,7 @@ has writers => (
   is       => 'rwp',
   isa      => HashRef[InstanceOf['ZeroBot::Log::Writer']],
   init_arg => undef,
-  default  => sub { {} },
+  default  => sub { +{} },
 );
 
 sub add_writers

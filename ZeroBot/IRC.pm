@@ -21,10 +21,10 @@ use POE qw(
 use Moo;
 
 has networks => (
-  is  => 'rw',
-  isa => HashRef[InstanceOf['ZeroBot::IRC::Network']],
+  is       => 'rw',
+  isa      => HashRef[InstanceOf['ZeroBot::IRC::Network']],
   init_arg => undef,
-  default => sub{ {} },
+  default  => sub{ +{} },
 );
 
 sub Module_register

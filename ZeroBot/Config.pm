@@ -102,7 +102,7 @@ sub add_protocol_config
   unless (defined $cfg->data)
   {
     Log->error('Failed to load protocol configuration');
-    return undef;
+    return;
   }
   $self->protocol_files->{$protocol} = $cfg;
   return 1;
