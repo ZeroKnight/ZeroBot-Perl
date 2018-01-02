@@ -2,8 +2,7 @@ package ZeroBot::Config;
 
 use ZeroBot::Common -types;
 
-use ZeroBot::Config::File::Core;
-use ZeroBot::Config::File::Module;
+use ZeroBot::Config::File;
 
 use Carp;
 use Moo;

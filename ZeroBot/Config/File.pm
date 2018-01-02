@@ -61,10 +61,6 @@ sub read
     return {};
   }
 
-  # try { $self->validate($yaml) } catch {
-  #   croak "Failed to validate config file $file: $_";
-  # };
-
   return \%cfg;
 }
 
@@ -96,15 +92,6 @@ sub rehash
   }
   $self->_build_hash(); # TODO: test if this is needed
   return 1;
-}
-
-# TODO: define some named subs inside validate() that take care of
-# common and frequent checks in the subclass validation()s
-sub validate
-{
-  my ($self, $data) = @_;
-  Log->warning('No validation for config file: ' . $self->filename) if Log;
-  1;
 }
 
 sub _build_hash
