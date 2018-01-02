@@ -40,8 +40,8 @@ sub read
 
   unless ($self->filepath->exists())
   {
-    $self->_early_log('warning', "Could not load config file '$file'; file not found.");
-    return {};
+    $self->filepath->touch();
+    $self->_early_log('verbose', "$file did not exist; opening new empty config");
   }
 
   try {
