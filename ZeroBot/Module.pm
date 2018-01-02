@@ -21,13 +21,13 @@ use parent 'Exporter::Tiny';
 our @EXPORT = ();
 our @EXPORT_OK = (
   map("module_$_", qw(
-    register send_event load unload reload list_available is_available
+    register send_event load unload reload get_config list_available is_available
     list_loaded is_loaded
   )),
   keys %constants,
 );
 our %EXPORT_TAGS = (
-  std    => [qw(:consts module_register module_send_event)],
+  std    => [qw(:consts module_register module_send_event module_get_config)],
   consts => [keys %constants],
 );
 
@@ -105,6 +105,12 @@ sub module_reload
   my $module = shift;
   module_unload($module) or return;
   module_load($module);
+}
+
+sub module_get_config
+{
+  my ($self, $module) = @_;
+  return Config->modules->{$module};
 }
 
 sub module_list_available
