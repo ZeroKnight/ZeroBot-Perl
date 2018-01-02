@@ -1,5 +1,6 @@
 use strictures 2;
 use Test::More tests => 8;
+use Test::Differences;
 
 use ZeroBot::Command;
 use ZeroBot::Command::Parser;
@@ -222,8 +223,7 @@ $expected->_set_args(['bar', 'baz', 'biz bang', '--bing']);
 $expected->_set_opts({a => undef, b => 5, bar => 5, f => undef, foo => undef});
 $expected->_set_expected(1);
 $expected->_set_valid(1);
-is_deeply($cmd, $expected, 'parse() returns expected command object')
-  or diag explain $cmd;
+eq_or_diff($cmd, $expected, 'parse() returns expected command object');
 
 ### Ensure error handling works as expected
 
@@ -285,5 +285,4 @@ $expected->_set_args([qw/foo bar baz/]);
 $expected->_set_opts({add => 1, f => 2});
 $expected->_set_expected(1);
 $expected->_set_valid(1);
-is_deeply($cmd, $expected, 'parse() handles extra whitespace properly')
-  or diag explain $cmd;
+eq_or_diff($cmd, $expected, 'parse() handles extra whitespace properly');
