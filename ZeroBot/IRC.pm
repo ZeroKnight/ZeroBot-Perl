@@ -211,8 +211,8 @@ sub Bot_irc_connect_network
     # NOTE: PoCo IRC will still subtract nick length from this, however.
     msg_length => 512,
   );
-  $spawn_opts{LocalAddr} = $self->cfg->core->{BindAddr}
-    if defined $self->cfg->core->{BindAddr};
+  $spawn_opts{LocalAddr} = Config->core->{BindAddr}
+    if defined Config->core->{BindAddr};
 
   my $irc = POE::Component::IRC::State->spawn(%spawn_opts)
     or Log->error("Failed to spawn IRC component for Network $network")
