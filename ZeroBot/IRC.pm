@@ -124,7 +124,7 @@ sub _initialize_irc
   }
   if ($available)
   {
-    Log->info(pluralize("Initialized %d Networks, $autoconnecting auto-connecting", $available));
+    Log->info(pluralize("Initialized %d Network(s), $autoconnecting auto-connecting", $available));
   }
   else
   {
