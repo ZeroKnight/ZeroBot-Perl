@@ -58,8 +58,7 @@ sub module_load
     return;
   }
 
-  # TODO: Remove hardcoded Module directory path
-  my $file = "Modules/$module.pm";
+  my $file = ZBCore->module_dir->child("$module.pm");
   my $m = ZeroBot::Module::File->new($file);
 
   if ($m->has_handle)
@@ -110,7 +109,7 @@ sub module_reload
 
 sub module_list_available
 {
-  my $moddir = path("Modules");
+  my $moddir = ZBCore->module_dir;
   return map(substr($_->basename, 0, -3), $moddir->children(qr/.+\.pm$/));
 }
 
@@ -118,7 +117,7 @@ sub module_is_available
 {
   my $module = shift;
   return unless defined $module;
-  return path("Modules/$module.pm")->exists;
+  return ZBCore->module_dir->child("$module.pm")->exists;
 }
 
 sub module_list_loaded { return keys %{ZBCore->modules} }

@@ -57,6 +57,17 @@ has db => (
   init_arg => undef,
 );
 
+has module_dir => (
+  is      => 'ro',
+  isa     => Path,
+  lazy    => 1,
+  coerce  => 1,
+  builder => sub {
+    my $self = shift;
+    $self->cfg->core->{Modules}{Path} // path('Modules');
+  },
+);
+
 has modules => (
   is      => 'rwp',
   isa     => HashRef[InstanceOf['ZeroBot::Module::File']],
@@ -168,7 +179,7 @@ sub syndicator_started
 
   # Load Feature Modules
   my $modules_loaded = 0;
-  my @modules = $self->cfg->get_as_list($self->cfg->modules->{Modules}{Enabled});
+  my @modules = $self->cfg->get_as_list($self->cfg->core->{Modules}{Enabled});
   foreach my $module (@modules)
   {
     if (module_is_available($module))
