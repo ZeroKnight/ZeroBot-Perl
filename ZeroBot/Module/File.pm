@@ -9,31 +9,31 @@ with 'ZeroBot::Util::File';
 # Should be able to pass a single scalar with a file path to init `filepath`
 
 has name => (
-  is   => 'rwp',
-  isa  => Str,
-  lazy => 1,
+  is       => 'rwp',
+  isa      => Str,
+  lazy     => 1,
   init_arg => undef,
 );
 
 has author => (
-  is   => 'rwp',
-  isa  => Str,
-  lazy => 1,
+  is       => 'rwp',
+  isa      => Str,
+  lazy     => 1,
   init_arg => undef,
 );
 
 has description => (
-  is   => 'rwp',
-  isa  => Str,
-  lazy => 1,
+  is       => 'rwp',
+  isa      => Str,
+  lazy     => 1,
   init_arg => undef,
 );
 
 has handle => (
-  is       => 'rwp',
-  isa      => Object,
-  lazy     => 1,
-  init_arg => undef,
+  is        => 'rwp',
+  isa       => Object,
+  lazy      => 1,
+  init_arg  => undef,
   predicate => 1,
 );
 
