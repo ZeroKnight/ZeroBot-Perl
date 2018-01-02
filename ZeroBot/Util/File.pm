@@ -42,7 +42,7 @@ has fileext => (
 around BUILDARGS => sub {
   my ($orig, $class, @args) = @_;
 
-  if (@args == 1 && !ref $args[0])
+  if (@args == 1 && (!ref $args[0] || ref $args[0] eq 'Path::Tiny'))
   {
     return $class->$orig(filepath => $args[0]);
   }
