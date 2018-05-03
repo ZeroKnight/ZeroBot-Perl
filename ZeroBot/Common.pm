@@ -48,7 +48,8 @@ sub import
 
   # Supress redefine warnings (that strictures also makes fatal) in ZeroBot's
   # feature modules
-  warnings->unimport::out_of($caller, 'redefine') if $caller =~ /^Modules::/;
+  warnings->unimport::out_of($caller, 'redefine')
+    if $caller =~ /^ZeroBot::Module::/;
 
   # Export Core Accessors
   {

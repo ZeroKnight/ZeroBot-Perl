@@ -7,7 +7,7 @@ $VERSION = eval $VERSION;
 use ZeroBot::Config;
 use ZeroBot::Log;
 use ZeroBot::Database;
-use ZeroBot::Module -all;
+use ZeroBot::Module::Loader -all;
 
 use POE;
 use Path::Tiny;

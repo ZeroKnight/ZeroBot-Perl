@@ -7,14 +7,7 @@ can_ok('ZeroBot::Module',
   map("module_$_", qw(
     register
     send_event
-    load
-    unload
-    reload
     get_config
-    list_available
-    is_available
-    list_loaded
-    is_loaded
   ))
 );
 
