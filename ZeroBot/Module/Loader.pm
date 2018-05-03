@@ -67,7 +67,11 @@ sub module_unload
   ZBCore->plugin_del(_module_syndicator_name($module));
 
   # Remove the module from %INC so that `require` actually reads the file again
+  # There can actually be two entries, as the module's path may not reflect the
+  # fixed 'ZeroBot::Module' namespace. I *think* that Moo is responsible for
+  # this second entry.
   delete $INC{ZBCore->modules->{$module}->filepath};
+  delete $INC{"ZeroBot/Module/$module.pm"};
 
   delete ZBCore->modules->{$module};
   return 1;
