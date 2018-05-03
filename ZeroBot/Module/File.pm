@@ -2,6 +2,9 @@ package ZeroBot::Module::File;
 
 use ZeroBot::Common -types;
 
+use Path::Tiny;
+use Types::Path::Tiny qw(Path);
+
 use Moo;
 with 'ZeroBot::Util::File';
 
@@ -45,12 +48,11 @@ sub BUILD
   return unless try { require $self->filepath }
   catch { Log->error("Failed to load module '$module': $_") };
 
-  # TODO: Remove hardcoded Module directory paths
   no strict 'refs';
-  $self->_set_name(${"Modules::${module}::Name"} // $module);
-  $self->_set_author(${"Modules::${module}::Author"} // 'Unknown');
-  $self->_set_description(${"Modules::${module}::Description"} // 'N/A');
-  $self->_set_handle("Modules::$module"->new());
+  $self->_set_name(${"ZeroBot::Module::${module}::Name"} // $module);
+  $self->_set_author(${"ZeroBot::Module::${module}::Author"} // 'Unknown');
+  $self->_set_description(${"ZeroBot::Module::${module}::Description"} // 'N/A');
+  $self->_set_handle("ZeroBot::Module::$module"->new());
 }
 
 1;
