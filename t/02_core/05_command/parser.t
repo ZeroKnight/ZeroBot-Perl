@@ -232,16 +232,16 @@ subtest 'Error handling' => sub {
 
   $line = '!test "foo bar';
   $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {});
-  ok(!$cmd->valid, 'Catch unterminated strings');
+  ok(!$cmd->valid, 'Unterminated strings');
 
   $line = '!test - foo';
   $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {a => OPTVAL_NONE});
-  ok(!$cmd->valid, 'Catch missing option character');
+  ok(!$cmd->valid, 'Missing option character');
 
   $line = '!test -ab-c';
   $cmd = ZeroBot::Command->new(line => $line);
   $cmd->parse(test => {a => OPTVAL_NONE, b => OPTVAL_NONE});
-  ok(!$cmd->valid, 'Catch invalid character in option cluster');
+  ok(!$cmd->valid, 'Invalid character in option cluster');
 
   $line = '!test --a';
   $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {add => OPTVAL_NONE});
@@ -249,19 +249,19 @@ subtest 'Error handling' => sub {
 
   $line = '!test --add#';
   $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {add => OPTVAL_NONE});
-  ok(!$cmd->valid, 'Catch invalid long option name');
+  ok(!$cmd->valid, 'Invalid long option name');
 
   $line = '!test -@';
   $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {a => OPTVAL_NONE});
-  ok(!$cmd->valid, 'Catch invalid option character');
+  ok(!$cmd->valid, 'Invalid option character');
 
   $line = '!test -a';
   $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {a => OPTVAL_REQUIRED});
-  ok(!$cmd->valid, 'Catch missing required option value');
+  ok(!$cmd->valid, 'Missing required option value');
 
   $line = '!test --add';
   $cmd = ZeroBot::Command->new(line => $line); $cmd->parse(test => {and => OPTVAL_REQUIRED});
-  ok(!$cmd->valid, 'Catch missing required long option value');
+  ok(!$cmd->valid, 'Missing required long option value');
 };
 
 ### Everything else; unsorted
