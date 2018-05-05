@@ -41,7 +41,7 @@ sub module_send_event
 
 sub module_get_config
 {
-  my ($self, $module) = @_;
+  my $module = shift;
   return Config->modules->{$module};
 }
 
