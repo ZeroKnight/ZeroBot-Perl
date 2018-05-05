@@ -14,8 +14,7 @@ has data => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->read() },
-  trigger  => sub { $_[0]->_build_hash() },
+  trigger  => sub { $_[0]->_update_hash_from_data() },
 );
 
 # Like data, but all "namespaced" sections and parameters are expanded into
@@ -25,47 +24,48 @@ has hash => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => 1,
 );
 
-sub BUILD { $_[0]->data; $_[0]->hash }
+sub BUILD { $_[0]->read() }
 
 sub obj { tied %{$_[0]->data} }
 
 sub read
 {
-  my $self = shift;
-  my $file = $self->filepath->stringify();
+  my ($self, $file) = @_;
+  $file //= $self->filepath;
   my %cfg;
 
-  unless ($self->filepath->exists())
+  unless ($file->exists())
   {
-    $self->filepath->touch();
-    $self->_early_log('verbose', "$file did not exist; opening new empty config");
+    $file->touch();
+    $self->_early_log(verbose => "'$file' does not exist; opening new empty config");
   }
 
+  $self->_early_log(info => "Reading config from file '$file'");
   try {
     tie %cfg, 'Config::IniFiles', (
-      -file          => $file,
-      -fallback      => ucfirst $self->filename_root,
+      -file          => $file->stringify(),
+      -fallback      => ucfirst basename_no_ext($file),
       -allowcontinue => 1,
       -allowempty    => 1,
     );
   } catch {
-    $self->_early_log('error', "Failed to load config file '$file': @Config::IniFiles::errors");
+    $self->_early_log(error => "Failed to load config file '$file': @Config::IniFiles::errors");
+    return;
   };
-
-  return \%cfg;
+  $self->_set_data(\%cfg);
+  return 1;
 }
 
 sub write
 {
   my ($self, $file) = @_;
-  $file //= $self->filepath->stringify;
+  $file //= $self->filepath;
 
-  Log->info("Writing config '", $self->filename_root, "' to $file");
+  Log->info("Writing config '", basename_no_ext($file), "' to '$file'");
   $self->_update_data_from_hash();
-  if ($self->obj->WriteConfig($file))
+  if (!$self->obj->WriteConfig($file->stringify))
   {
     Log->error("Failed to write config file '$file'");
     return;
@@ -78,22 +78,22 @@ sub rehash
   my $self = shift;
   my $file = $self->filepath;
 
-  Log->info("Rehashing config file: $file");
-  if ($self->obj->ReadConfig())
+  Log->info("Rehashing config file: '$file'");
+  if (!$self->obj->ReadConfig())
   {
     Log->error("Failed to rehash config '$file': @Config::IniFiles::errors");
     return;
   }
-  $self->_build_hash(); # TODO: test if this is needed
+  $self->_update_hash_from_data();
   return 1;
 }
 
-sub _build_hash
+sub _update_hash_from_data
 {
   my $self = shift;
   my $hash = {};
 
-  return {} unless keys %{$self->data};
+  $self->_set_hash({}) unless keys %{$self->data};
 
   # Trim whitespace surrounding values and transform any values representing
   # a list into an arrayref
@@ -143,7 +143,7 @@ sub _build_hash
       }
     }
   }
-  return $hash;
+  $self->_set_hash($hash);
 }
 
 sub _update_data_from_hash

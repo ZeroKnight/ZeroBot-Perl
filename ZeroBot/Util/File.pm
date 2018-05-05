@@ -39,6 +39,8 @@ has fileext => (
   builder  => sub { $_[0]->filepath->basename =~ $re_ext and $1 },
 );
 
+sub basename_no_ext { $_[0]->basename($re_ext) }
+
 around BUILDARGS => sub {
   my ($orig, $class, @args) = @_;
 
