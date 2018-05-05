@@ -18,6 +18,7 @@ my %levelmap = (
   'verbose' => 5,
   'debug'   => 6,
 );
+my $longest_level = 7; # Used to caculate padding when outputting level in log
 
 has level => (
   is  => 'rw',
@@ -114,6 +115,7 @@ sub _format
   # optional internal and debugging information as variables.
   tsprintf($output, {
     level       => uc $level,
+    levelpad    => ' ' x ($longest_level - length $level),
     time        => POSIX::strftime($time, localtime),
 
     caller_pkg  => $caller->[0],
