@@ -52,14 +52,8 @@ sub read
       -allowempty    => 1,
     );
   } catch {
-    $self->_early_log('error', "Failed to load config file '$file': $_");
-  };
-
-  unless (%cfg)
-  {
     $self->_early_log('error', "Failed to load config file '$file': @Config::IniFiles::errors");
-    return {};
-  }
+  };
 
   return \%cfg;
 }
