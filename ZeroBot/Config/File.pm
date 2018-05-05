@@ -133,7 +133,7 @@ sub _build_hash
         my $iter_p = $iter;
         foreach my $subparam ($parameter =~ /([^.]+)\./g)
         {
-          $iter_p->{$subparam} = {} unless exists $iter->{$subparam};
+          $iter_p->{$subparam} = {} unless exists $iter_p->{$subparam};
           $iter_p = $iter_p->{$subparam};
         }
         $parameter =~ /([^.]+)$/;
