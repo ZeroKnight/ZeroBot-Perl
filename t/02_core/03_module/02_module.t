@@ -32,10 +32,12 @@ module_load($module);
 ok(module_register($module, 'SERVER', 'all'), 'module_register');
 
 subtest 'module_get_config' => sub {
-  plan tests => 2;
+  plan tests => 4;
 
   my $c = module_get_config($module);
   ok(keys %$c, 'TestModule config exists and is not empty');
+  is($c->{Foo}, 'Bar', 'Got expected config value');
+  is($c->{ZZZ}, undef, 'Got undef for bad key');
 
   $c = module_get_config('0123456');
   is($c, undef, 'undef returned for module without config');
