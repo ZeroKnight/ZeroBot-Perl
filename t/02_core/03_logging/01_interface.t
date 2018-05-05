@@ -1,8 +1,9 @@
 use strictures 2;
-use Test::More tests => 1;
-use ZeroBot::Log;
+use Test::More tests => 2;
 
-my @methods = qw(
+BEGIN { use_ok('ZeroBot::Log') }
+
+can_ok('ZeroBot::Log', qw(
   level
   output_format
   time_format
@@ -16,6 +17,6 @@ my @methods = qw(
   info
   debug
   verbose
-);
+));
 
-can_ok('ZeroBot::Log', @methods);
+# TODO: test methods
