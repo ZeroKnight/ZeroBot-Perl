@@ -76,7 +76,7 @@ subtest 'module_list_available' => sub {
   eq_or_diff([module_list_available()], [$module], 'No implicit directory');
   eq_or_diff(
     [module_list_available('Modules')],
-    [map($_->basename =~ s/\.pm//r, path('Modules')->children())],
+    [map($_->basename('.pm'), path('Modules')->children())],
     'Explicit directory'
   );
   my @a = module_list_available('t');
