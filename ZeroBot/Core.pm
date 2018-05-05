@@ -161,8 +161,7 @@ sub syndicator_started
   my @protos = $self->cfg->get_as_list($self->cfg->core->{Core}{Protocols});
   unless (@protos)
   {
-    $self->log->fatal('No protocol modules enabled! At least one protocol must be enabled.');
-    $kernel->call($_[SESSION], 'shutdown');
+    $self->log->warning('No protocol modules enabled!');
     return;
   }
   foreach my $p (@protos)
@@ -171,7 +170,7 @@ sub syndicator_started
   }
   if ($protos_loaded == 0)
   {
-    $self->log->fatal('Failed to load any protocol modules! At least one protocol must load successfully.');
+    $self->log->fatal('Failed to load any protocol modules! Shutting down.');
     $kernel->call($_[SESSION], 'shutdown');
     return;
   }
