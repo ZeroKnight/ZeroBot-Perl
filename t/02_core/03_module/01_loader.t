@@ -22,8 +22,6 @@ can_ok('ZeroBot::Module::Loader',
   ))
 );
 
-# TODO: Disable ZeroBot logging
-
 my $module = 'TestModule';
 my $bot = ZeroBot::Core->instance(cfg_dir => 't/data');
 isa_ok($bot, 'ZeroBot::Core');
