@@ -7,7 +7,7 @@ use Moo::Role;
 has output_format => (
   is  => 'rw',
   isa => Str,
-  default => sub { '[%level] %time %msg' },
+  default => sub { '%time - [%level] %msg' },
   predicate => 1,
 );
 
