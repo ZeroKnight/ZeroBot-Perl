@@ -18,20 +18,21 @@ our %EXPORT_TAGS = (
 
 sub module_load
 {
-  my $module = shift;
+  my ($module, $dir) = @_;
+  $dir = defined $dir ? path($dir) : ZBCore->module_dir;
 
   if (module_is_loaded($module))
   {
     Log->warning("Module '$module' is already loaded");
     return;
   }
-  unless (module_is_available($module))
+  unless (module_is_available($module, $dir))
   {
     Log->error("Module not found: $module");
     return;
   }
 
-  my $file = ZBCore->module_dir->child("$module.pm");
+  my $file = $dir->child("$module.pm");
   my $m = ZeroBot::Module::File->new($file);
 
   if ($m->has_handle)
@@ -86,15 +87,16 @@ sub module_reload
 
 sub module_list_available
 {
-  my $moddir = ZBCore->module_dir;
+  my $moddir = defined $_[0] ? path($_[0]) : ZBCore->module_dir;
   return map(substr($_->basename, 0, -3), $moddir->children(qr/.+\.pm$/));
 }
 
 sub module_is_available
 {
-  my $module = shift;
+  my ($module, $dir) = @_;
+  $dir = defined $dir ? path($dir) : ZBCore->module_dir;
   return unless defined $module;
-  return ZBCore->module_dir->child("$module.pm")->exists;
+  return $dir->child("$module.pm")->exists;
 }
 
 sub module_list_loaded { return keys %{ZBCore->modules} }
