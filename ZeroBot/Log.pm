@@ -18,7 +18,7 @@ my %levelmap = (
   'verbose' => 5,
   'debug'   => 6,
 );
-my $longest_level = 7; # Used to caculate padding when outputting level in log
+my $longest_level = 7; # Used to calculate padding when outputting level in log
 
 has level => (
   is  => 'rw',
