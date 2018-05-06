@@ -1,7 +1,7 @@
-## Vim
-[._]*.s[a-w][a-z]
-[._]s[a-w][a-z]
-*.un~
-.netrwhist
-*~
+# Database files
+*.db
+*.sql
+*.sqlite
 
+# Configuration files
+config/
