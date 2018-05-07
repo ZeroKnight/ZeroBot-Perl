@@ -1,8 +1,10 @@
 use strictures 2;
 use Test::More tests => 11;
 use Scalar::Util 'openhandle';
-use Path::Tiny 'tempfile';
 use Fcntl qw(O_WRONLY O_APPEND O_CREAT :flock);
+
+use lib 't/lib';
+use TestUtils qw(dies_ok mktempfile);
 
 my $class;
 BEGIN
@@ -19,13 +21,8 @@ can_ok($class, qw(
   write
 ));
 
-eval { $class->new() };
-ok($@, 'new() without argument(s) fails');
-my $writer = new_ok($class => [
-  filepath => tempfile(
-    TEMPLATE => 'zbtestXXXXXXXX', CLEANUP => 1, EXLOCK => 0
-  )
-]);
+dies_ok { $class->new() } 'new() without argument(s) fails';
+my $writer = new_ok($class => [filepath => mktempfile()]);
 
 # Creation defaults
 ok(openhandle($writer->handle),    'Log file has valid file handle');

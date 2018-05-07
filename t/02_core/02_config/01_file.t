@@ -1,9 +1,11 @@
 use strictures 2;
 use Test::More tests => 10;
 use Test::Differences;
-use Path::Tiny 'tempfile';
 
 BEGIN { use_ok('ZeroBot::Config::File') }
+
+use lib 't/lib';
+use TestUtils 'mktempfile';
 
 use ZeroBot::Core;
 
@@ -81,7 +83,7 @@ eq_or_diff($h, $expected, 'Expected data structure');
 
 # Test writing and update ability
 $h->{Sec}{foo} = 'CHANGED';
-my $temp = tempfile('zbtestXXXXXXXX');
+my $temp = mktempfile();
 ok($cf->write($temp), 'write()');
 $h->{Sec}{foo} = 'NOT CHANGED';
 $cf->read($temp);
