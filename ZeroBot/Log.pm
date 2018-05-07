@@ -22,7 +22,12 @@ my $longest_level = 7; # Used to calculate padding when outputting level in log
 
 has level => (
   is  => 'rw',
-  isa => sub { exists $levelmap{$_[0]} },
+  isa => sub {
+    local $" = ', ';
+    my @levels = sort { $levelmap{$a} <=> $levelmap{$b} } keys %levelmap;
+    die "'$_[0]' is not a valid log level. Must be one of: @levels"
+      unless exists $levelmap{$_[0]};
+  },
   default => 'info',
 );
 
@@ -145,13 +150,14 @@ sub _log_at_level
     my $final = $obj->_format($level, $writer, $flattened, [caller(1)]);
     $writer->write($final) if $self->_should_log($level);
   }
+  return 1;
 }
 
 sub fatal   { shift->_log_at_level('fatal',   @_) }
 sub error   { shift->_log_at_level('error',   @_) }
 sub warning { shift->_log_at_level('warning', @_) }
 sub info    { shift->_log_at_level('info',    @_) }
-sub debug   { shift->_log_at_level('debug',   @_) }
 sub verbose { shift->_log_at_level('verbose', @_) }
+sub debug   { shift->_log_at_level('debug',   @_) }
 
 1;
