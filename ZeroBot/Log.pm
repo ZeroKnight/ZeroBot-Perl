@@ -57,6 +57,7 @@ has writers => (
 sub add_writers
 {
   my ($self, @args) = @_;
+  my $added = 0;
   unless (@args and @args % 2 == 0)
   {
     confess 'Arguments to add_writers() must be in pairs; a name and a ',
@@ -79,7 +80,9 @@ sub add_writers
       $self->writers->{$name} = "ZeroBot::Log::Writer::$type"->new($wargs);
     }
     catch { carp "$failed: $_" };
+    ++$added;
   }
+  return $added;
 }
 
 sub del_writers
