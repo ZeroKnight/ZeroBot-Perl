@@ -1,16 +1,27 @@
 use strictures 2;
-use Test::More tests => 8;
+use Test::More tests => 12;
 use Test::Differences;
 
-use ZeroBot::Command;
-use ZeroBot::Command::Parser;
-use ZeroBot::Command::Constants;
+BEGIN
+{
+  use_ok('ZeroBot::Command');
+  use_ok('ZeroBot::Command::Parser');
+  use_ok('ZeroBot::Command::Constants');
+}
+
+can_ok('ZeroBot::Command::Parser', qw(
+  cmd
+  spec
+  pos
+  end
+  parse_opts
+  failed
+  parse
+));
 
 # Access to ZBCore->cmdchar in parse() and disable logging
 use ZeroBot::Core;
-ZeroBot::Core->instance(
-  log => ZeroBot::Log->new(level => 'none'),
-);
+ZeroBot::Core->instance(cfg_dir => 't/data');
 
 ### Helpers
 my ($cp, $cmd, $line);
