@@ -112,7 +112,6 @@ sub parse
           else
           {
             $self->_get_opt_long;
-            return $self->cmd if $self->failed;
           }
         }
         else
@@ -123,26 +122,23 @@ sub parse
             return $self->cmd;
           }
           $self->_get_opt;
-          return $self->cmd if $self->failed;
         }
       }
       else
       {
         # No longer parsing options, just push to the argument stack
         $self->_get_arg;
-        return $self->cmd if $self->failed;
       }
     }
     elsif (!defined $c)
     {
       $self->_error('Unexpected end of input') unless $self->_current;
-      return $self->cmd;
     }
     else
     {
       $self->_get_arg;
-      return $self->cmd if $self->failed;
     }
+    return $self->cmd if $self->failed;
   }
   $self->cmd->_set_valid(1);
   return $self->cmd;

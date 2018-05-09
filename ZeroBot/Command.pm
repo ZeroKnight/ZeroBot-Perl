@@ -61,15 +61,7 @@ has valid => (
 sub parse
 {
   my $self = shift;
-  my $spec;
-  if (ref $_[0] eq 'HASH')
-  {
-    $spec = $_[0];
-  }
-  else
-  {
-    $spec = { @_ };
-  }
+  my $spec = ref $_[0] eq 'HASH' ? $_[0] : +{ @_ };
   $self->_check_spec($spec);
   my $p = ZeroBot::Command::Parser->new(cmd => $self, spec => $spec);
   $p->parse();
