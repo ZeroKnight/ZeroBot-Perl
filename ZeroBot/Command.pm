@@ -58,6 +58,15 @@ has valid => (
   init_arg => undef,
 );
 
+around BUILDARGS => sub {
+  my ($orig, $class, @args) = @_;
+  if (@args == 1 && !ref $args[0])
+  {
+    return $class->$orig(line => $args[0]);
+  }
+  return $class->$orig(@args);
+};
+
 sub parse
 {
   my $self = shift;
