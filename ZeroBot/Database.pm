@@ -62,11 +62,14 @@ sub new_connection
   return $dbh;
 }
 
+# NOTE: If AutoCommit is disabled, SQLite should automatically rollback() any
+# uncommitted changes. However, we'll be explicit for peace of mind.
 sub close_connection
 {
   my ($self, $dbh) = @_;
   my $name = $dbh->{private_module_name};
   Log->debug("Closing connection to database by module '$name'");
+  $dbh->rollback() unless $dbh->{AutoCommit};
   my $rv = $dbh->disconnect()
     or Log->warning("Error while closing connection to database by module '$name': $dbh->errstr");
   delete $self->handles->{$name};
