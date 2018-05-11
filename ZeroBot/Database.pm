@@ -52,8 +52,14 @@ sub new_connection
     private_module_name => $name,
   );
   Log->debug('Creating new connection to database ', $self->filepath, " for module '$name'");
-  my $dbh = DBI->connect($dsn, $self->user, $self->password, \%attrs)
-    or croak $DBI::errstr;
+  my $dbh = DBI->connect($dsn, $self->user, $self->password, \%attrs);
+
+  unless (defined $dbh)
+  {
+    Log->error('Error while attempting connection to database ',
+      $self->filepath, "for module '$name': ", $dbh->errstr);
+    return;
+  }
 
   # Enforce foreign key constraints
   $dbh->do("PRAGMA foreign_keys = ON");
@@ -71,7 +77,7 @@ sub close_connection
   Log->debug("Closing connection to database by module '$name'");
   $dbh->rollback() unless $dbh->{AutoCommit};
   my $rv = $dbh->disconnect()
-    or Log->warning("Error while closing connection to database by module '$name': $dbh->errstr");
+    or Log->warning("Error while closing connection to database by module '$name': ", $dbh->errstr);
   delete $self->handles->{$name};
   return $rv;
 }
@@ -83,9 +89,9 @@ sub connected_modules { return keys %{$_[0]->handles} }
 sub _database_error
 {
   my ($errstr, $dbh, $rv) = @_;
-  $rv //= 'UNDEF';
   my $module = $dbh->{private_module_name};
-  Log->error("Database error from module '$module': $errstr (Returned: $rv)");
+  Log->error("Database error from module '$module': $errstr",
+    defined $rv ? " (Returned: $rv)" : '');
 }
 
 1;
