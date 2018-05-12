@@ -76,7 +76,10 @@ has modules => (
 
 has cmdchar => (
   is      => 'rwp',
-  isa     => sub { length($_[0]) == 1 },
+  isa     => sub {
+    die "cmdchar must be a single character; given: $_[0]"
+      unless length($_[0]) == 1;
+  },
   lazy    => 1,
   builder => sub {
     my $self = shift;
