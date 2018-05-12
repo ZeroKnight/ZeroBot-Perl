@@ -1,237 +1,185 @@
-package Modules::Chat;
+package ZeroBot::Module::Chat;
 
-use strict;
-use warnings;
+use Carp;
+use List::Util qw(any);
 
-use parent qw(ZeroBot::Module);
-use YAML::XS qw(LoadFile);
+use Moo;
+use ZeroBot::Common -consts_cmd;
+use ZeroBot::Module -std;
 
-our $Name        = 'Chat'; # NOTE: Can we get this from the package name?
+our $Name        = 'Chat';
 our $Author      = 'ZeroKnight';
 our $Description = 'Allows ZeroBot to chat and respond to conversation in various ways';
 
-my $config = LoadFile('config/Chat.yaml');
-my @chat_tables = (qw/joingreet mention question trollxeno/);
-my @question_triggers = @{ $config->{Question}{triggers} };
-my @trollxeno_nicks = @{ $config->{TrollXeno}{nicks} };
+my $dbh;
+my $cfg = Config->modules->{Chat};
+
 # \xa1 and \xbf are the inverted variants of ! and ?
-my @dotchars = ('.', '!', '?', "\x{a1}", "\x{bf}");
+# \x203D is the interrobang
+my @dotchars = ('.', '!', '?', "\x{a1}", "\x{bf}", "\x{203D}");
 
-sub commanded {
-    my ($self, $msg, $cmd) = @_;
-    my @arg = @{ $cmd->{arg} };
-    my $target;
+sub Module_register
+{
+  my $self = shift;
 
-    return unless grep { $_ eq $cmd->{name} } qw(say do raw);
-    return unless @arg;
+  # TODO: logging
 
-    if (grep { $_ eq $cmd->{name} } qw(say do)) {
-        $target = $cmd->{opt}{to} // $msg->{where};
-        $self->puppet($cmd->{name}, $target, "@arg");
-    } elsif ($cmd->{name} eq 'raw') {
-        $self->puppet_raw("@arg");
-    }
-    print "Chat: $msg->{nick} => $cmd->{name}",
-        (defined $target ? "=> $target" : ''), ": \"@arg\"\n";
+  module_register($self, 'SERVER', qw(
+    commanded
+    irc_msg_public
+    irc_msg_private
+    irc_action
+    irc_joined
+  ));
 
-    return 1;
+  $dbh = ZBCore->db->new_connection($Name);
+  init_tables();
+
+  return MODULE_EAT_NONE;
 }
 
-sub joined {
-    my ($self, $who, $channel) = @_;
-
-    $self->greet($channel) if $self->Bot->Nick eq $who;
+sub Module_unregister
+{
+  my $self = shift;
+  ZBCore->db->close_connection($dbh);
 }
 
-sub said {
-    my ($self, $msg) = @_;
-    my $me = $self->Bot->Nick;
+sub Bot_commanded
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my $cmd = ${ $_[0] };
+  my $bot_nick = $cmd->network->irc->nick_name;
+  $cmd->parse(
+    say => {
+      'h|help' => OPTVAL_NONE,
+      't|to'   => OPTVAL_REQUIRED,
+    },
+    do => {
+      'h|help' => OPTVAL_NONE,
+      't|to'   => OPTVAL_REQUIRED,
+    },
+    raw => {},
+  );
+  return MODULE_EAT_NONE unless $cmd->valid;
 
-    # TrollXeno: Spew hatred whenever a particular annoying lifeform spews
-    # textual diarrhea
-    if (grep { $_ eq $msg->{nick} } @trollxeno_nicks and
-      $config->{TrollXeno}{trolling}) {
-        if (int(rand($config->{TrollXeno}{chance}) + 1) == 1) {
-            $self->trollxeno($msg->{where});
-            return;
-        }
-    }
-
-    if (grep { $_ eq $msg->{nick} } qw(Wazubaba ZeroKnight)) {
-        if ($msg->{body} =~ /^t is for(\?*|\.{1,}\??| t)$/) {
-            $self->privmsg($msg->{where}, 'z is for b | b is for v | v is for c | c is for p | p is for t | t is for t');
-        }
-    }
-
-    # Dots...!
-    my $dotsregex = '^\s*[' . join('', @dotchars) . ']+\s*$';
-    if ($msg->{body} =~ /$dotsregex/) {
-        # Do not use '.' as a possible output
-        my $char = int(rand(@dotchars - 1)) + 1;
-        $self->privmsg($msg->{where} => "$msg->{body}" . $dotchars[$char]);
-        return;
-    }
-
-    # Answer Questions
-    # FIXME: this needs a (non-hacky) solution for '$me' in the yaml...
-    foreach my $pattern (@question_triggers) {
-        $pattern =~ s/\\\$me/$me/g; # XXX
-        if ($msg->{body} =~ /$pattern/) {
-            if ($msg->{body} =~ /would you kindly/i) {
-                $self->respond_question($msg->{where}, $msg->{nick}, 1);
-            } else {
-                $self->respond_question($msg->{where}, $msg->{nick});
-            }
-            return;
-        }
-    }
-
-    # Respond to being mentioned...strangely
-    if ($msg->{body} =~ /$me/) { # NOTE: Needs to be LOW priority
-        $self->respond($msg->{where});
-        return;
-    }
+  if ($cmd->name =~ /^(say|do)$/n)
+  {
+    my $target = $cmd->opts->{to} //
+      ($cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest);
+    my $type = $cmd->name eq 'say' ? 'msg' : 'action';
+    respond($type, $cmd->network, $target, $cmd->args_str);
+  }
+  elsif ($cmd->name eq 'raw')
+  {
+    $cmd->network->irc->yield(quote => $cmd->args_str);
+  }
+  return MODULE_EAT_NONE;
 }
 
-sub emoted {
-    my ($self, $msg) = @_;
-    my $me = $self->Bot->Nick;
+sub Bot_irc_joined
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my ($network, $channel, $nick, $who) = map($$_, @_[0..3]);
 
-    # TrollXeno: Spew hatred whenever a particular annoying lifeform spews
-    # textual diarrhea
-    if (grep { $_ eq $msg->{nick} } @trollxeno_nicks and
-      $config->{TrollXeno}{trolling}) {
-        if (int(rand($config->{TrollXeno}{chance}) + 1) == 1) {
-            $self->trollxeno($msg->{where});
-            return;
-        }
-    }
-
-    # Dots...!
-    my $dotsregex = '^\s*[' . join('', @dotchars) . ']+\s*$';
-    if ($msg->{body} =~ /$dotsregex/) {
-        # Do not use '.' as a possible output
-        my $char = int(rand(@dotchars - 1)) + 1;
-        $self->privmsg($msg->{where} => "$msg->{body}" . $dotchars[$char]);
-        return;
-    }
-
-    # Respond to being mentioned...strangely
-    if ($msg->{body} =~ /$me/) { # NOTE: Needs to be LOW priority
-        $self->respond($msg->{where});
-        return;
-    }
-}
-
-sub help {
-    return (
-        'say|do [-to=target] <what> -- Make me say or do something',
-        'raw <message> -- Have me send a raw IRC message to the server (think QUOTE)'
-    )
-}
-
-sub greet {
-    my ($self, $channel) = @_;
-    my $dbh = $self->Bot->_dbh;
-
+  # Greet the channel upon joining
+  if ($nick eq $network->irc->nick_name)
+  {
     my @ary = $dbh->selectrow_array(q{
-        SELECT * FROM joingreet
-        ORDER BY RANDOM() LIMIT 1
+      SELECT * FROM chat_greetings
+      ORDER BY RANDOM() LIMIT 1;
     });
-    if ($ary[1]) {
-        $self->emote($channel, $ary[0]);
-    } else {
-        $self->privmsg($channel, $ary[0]);
-    }
+    respond($ary[1] ? 'action' : 'msg', $network, $channel, $ary[0]);
+  }
+  return MODULE_EAT_NONE;
 }
 
-sub respond {
-    my ($self, $who) = @_;
-    my $dbh = $self->Bot->_dbh;
+sub Bot_irc_msg_public
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my $msg = ${ $_[0] };
+  my $bot_nick = $msg->network->irc->nick_name;
 
-    my @ary = $dbh->selectrow_array(q{
-        SELECT * FROM mention
+  # If handling a private message, set $target to the sender, otherwise set it
+  # to where the message was sent from
+  # TODO: Create a utility function for determining target like this, or better
+  # yet, bake it into IRC::Message
+  my $target = $msg->dest eq $bot_nick ? $msg->src_nick : $msg->dest;
+
+  # Berate: Spew hatred at configured users whenever they speak
+  my @berate_nicks = Config->get_as_list($cfg->{Berate}{nicks});
+  if ($cfg->{Berate}{enabled} and any {$msg->src_nick =~ /$_/} @berate_nicks)
+  {
+    if (rand(1) * 100 <= $cfg->{Berate}{chance})
+    {
+      my @ary = $dbh->selectrow_array(q{
+        SELECT * FROM chat_berate
         ORDER BY RANDOM() LIMIT 1
-    });
-    if ($ary[1]) {
-        $self->emote($who, $ary[0]);
-    } else {
-        $self->privmsg($who, $ary[0]);
+      });
+      respond($ary[1] ? 'action' : 'msg', $msg->network, $target, $ary[0]);
+      return MODULE_EAT_NONE;
     }
-}
+  }
 
-sub respond_question {
-# $bias is the answer type to be biased toward. Values are identical to their
-# mapped value in the DB. 0 = Negative, 1 = Positive, 2 = Indifferent
-# If $bias is undef, normal behavior occurs
-    my ($self, $where, $who, $bias) = @_;
-    my $atype = int(rand(3));
-    my $dbh = $self->Bot->_dbh;
+  # Dots...!
+  my $dotsregex = '^\s*[' . join('', @dotchars) . ']+\s*$';
+  if ($msg->message =~ /$dotsregex/)
+  {
+    # Do not use '.' as a possible output
+    my $char = int(rand(@dotchars - 1)) + 1;
+    my $reply = $msg->message . $dotchars[$char];
+    module_send_event(irc_msg_send => $msg->network, $target, $reply);
+    return MODULE_EAT_NONE;
+  }
 
-    if (defined $bias) {
-        # 3:1 chance of being biased
-        $atype = $bias unless int(rand(3)) == 0;
-    }
-
+  # Respond to being mentioned...strangely
+  # NOTE: Needs to be LOW priority
+  if ($msg->message =~ /$bot_nick/)
+  {
     my @ary = $dbh->selectrow_array(q{
-        SELECT * FROM question
-        WHERE agree = ?
-        ORDER BY RANDOM() LIMIT 1;
-    }, undef, $atype);
-    if ($ary[1]) {
-        $self->emote($where, $ary[0]);
-    } else {
-        $self->privmsg($where, $ary[0]);
-    }
-}
-
-sub puppet {
-    my ($self, $type, $target, $msg) = @_;
-
-    if ($type eq 'say') {
-        $self->privmsg($target, $msg);
-    } elsif ($type eq 'do') {
-        $self->emote($target, $msg);
-    } else {
-        warn "puppet(): \$type must be either 'say' or 'do'";
-    }
-}
-
-sub puppet_raw {
-    my ($self, $rawline) = @_;
-
-    $self->Bot->_ircobj->yield(quote => $rawline);
-}
-
-# TODO: Flood protection; perhaps clever use of alarm()?
-sub trollxeno {
-    my ($self, $target) = @_;
-    my $dbh = $self->Bot->_dbh;
-
-    my @ary = $dbh->selectrow_array(q{
-        SELECT * FROM trollxeno
-        ORDER BY RANDOM() LIMIT 1
+      SELECT * FROM chat_mentioned
+      ORDER BY RANDOM() LIMIT 1;
     });
-    if ($ary[1]) {
-        $self->emote($target, $ary[0]);
-    } else {
-        $self->privmsg($target, $ary[0]);
-    }
+    respond($ary[1] ? 'action' : 'msg', $msg->network, $target, $ary[0]);
+    return MODULE_EAT_NONE;
+  }
+
+  return MODULE_EAT_NONE;
 }
 
-sub add_phrase {
-    my ($self, $where, $who, $table, $phrase, $action) = @_;
-    my $dbh = $self->Bot->_dbh;
+# These are handled in mostly the same way
+sub Bot_irc_msg_private { Bot_irc_msg_public(@_) }
+sub Bot_irc_action      { Bot_irc_msg_public(@_) }
 
-    unless (grep { $_ eq $table } @chat_tables) {
-        $self->privmsg($where,
-            "$who: Invalid 'Chat' table. Valid tables: @chat_tables"
-        );
-        return;
-    }
+sub respond
+{
+  my ($type, $network, $target, $str) = @_;
+  croak "Argument \$type must be either 'msg' or 'action', given: $type"
+    unless $type =~ /^(msg|action)$/n;
+  module_send_event("irc_${type}_send" => $network, $target, $str);
+}
 
-    # TODO: sqlite stuff
-    $self->privmsg($where, "Were this implemented, this is where we'd do things");
+# TODO: Rename [action] columns to [msgtype] or something, and allow values
+# 'msg' or 'action'. Would make sending the appropriate event easier
+sub init_tables
+{
+  # Tables following the phrase|action format
+  foreach my $table (qw/greetings mentioned berate/)
+  {
+    $dbh->do(qq{
+      CREATE TABLE IF NOT EXISTS [chat_$table] (
+      [phrase] TEXT NOT NULL ON CONFLICT FAIL UNIQUE,
+      [action] INTEGER DEFAULT 0,
+      [id] INTEGER PRIMARY KEY)
+    });
+  }
+
+  $dbh->do(q{
+    CREATE TABLE IF NOT EXISTS [chat_questioned] (
+    [phrase] TEXT NOT NULL ON CONFLICT FAIL UNIQUE,
+    [action] INTEGER DEFAULT 0,
+    [agree] INTEGER NOT NULL ON CONFLICT FAIL,
+    [id] INTEGER PRIMARY KEY)
+  });
 }
 
 1;

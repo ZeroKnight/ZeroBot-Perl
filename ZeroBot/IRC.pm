@@ -4,8 +4,9 @@ our $VERSION = "0.005";
 $VERSION = eval $VERSION;
 
 use ZeroBot::Common -types, -string;
+use ZeroBot::Module -std;
+use ZeroBot::Module::Loader -load;
 
-use ZeroBot::Module -all;
 use ZeroBot::IRC::Network;
 use ZeroBot::IRC::Server;
 use ZeroBot::IRC::Message;
@@ -348,8 +349,7 @@ sub irc_join
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $nick = parse_user($who);
 
-  # TODO: send 'join' event
-  # module_send_event(join => ...);
+  module_send_event(irc_joined => $network, $channel, $nick, $who);
 }
 
 sub irc_nick
