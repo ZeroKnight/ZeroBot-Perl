@@ -13,6 +13,7 @@ our $Description = 'Allows ZeroBot to chat and respond to conversation in variou
 
 my $dbh;
 my $cfg = Config->modules->{Chat};
+my $has_fortune;
 
 # \xa1 and \xbf are the inverted variants of ! and ?
 # \x203D is the interrobang
@@ -34,6 +35,8 @@ sub Module_register
 
   $dbh = ZBCore->db->new_connection($Name);
   init_tables();
+
+  $has_fortune = any { -f "$_/fortune" && -x _ } split /:/, $ENV{PATH};
 
   return MODULE_EAT_NONE;
 }
@@ -59,6 +62,7 @@ sub Bot_commanded
       't|to'   => OPTVAL_REQUIRED,
     },
     raw => {},
+    fortune => {},
   );
   return MODULE_EAT_NONE unless $cmd->valid;
 
@@ -72,6 +76,23 @@ sub Bot_commanded
   elsif ($cmd->name eq 'raw')
   {
     $cmd->network->irc->yield(quote => $cmd->args_str);
+  }
+  elsif ($cmd->name eq 'fortune')
+  {
+    my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
+    if ($has_fortune)
+    {
+      my @fortune;
+      while (!@fortune or @fortune > 5)
+      {
+        @fortune = `fortune`;
+      }
+      respond(msg => $cmd->network, $target, $_) for @fortune;
+    }
+    else
+    {
+      respond(msg => $cmd->network, $target, '`fortune` is not available :(');
+    }
   }
   return MODULE_EAT_NONE;
 }
