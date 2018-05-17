@@ -120,6 +120,14 @@ sub Bot_irc_msg_public
     }
   }
 
+  # wat
+  if ($msg->message =~ /w+h?[au]+t\s*$/i)
+  {
+    my $reply = qw(wat wut whut)[int(rand(2))];
+    module_send_event(irc_msg_send => $msg->network, $target, $reply);
+    return MODULE_EAT_NONE;
+  }
+
   # Dots...!
   my $dotsregex = '^\s*[' . join('', @dotchars) . ']+\s*$';
   if ($msg->message =~ /$dotsregex/)
