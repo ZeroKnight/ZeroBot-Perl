@@ -1,61 +1,102 @@
-package Modules::Encode;
+package ZeroBot::Module::Encode;
 
-use strict;
-use warnings;
-use v5.14;
+use Moo;
+use ZeroBot::Common -consts_cmd;
+use ZeroBot::Module -std;
 
-use parent qw(ZeroBot::Module);
 use Digest::MD5 qw(md5_hex);
 use Digest::SHA qw(sha256_hex sha512_hex);
 use Digest::CRC qw(crc32_hex);
 use MIME::Base64;
 
-our $Name = 'Encode';
-our $Author = 'ZeroKnight';
-our $Description = 'Encode strings using a variety of algorithms';
+our $Name        = 'Encode';
+our $Author      = 'ZeroKnight';
+our $Description = 'Encode arbitrary input using a variety of algorithms';
 
 # TODO: Add more
 my @algorithm_list = qw(rot13 md5 sha256 sha512 crc32 base64);
 
-sub commanded {
-    my ($self, $msg, $cmd) = @_;
-    my @arg = @{ $cmd->{arg} };
+sub Module_register
+{
+  my $self = shift;
 
-    return unless $cmd->{name} eq 'encode';
+  # TODO: logging
 
-    if (exists $cmd->{opt}{list}) {
-        $self->reply($msg->{where}, $msg->{nick},
-            "I support the following algorithms: @algorithm_list"
-        );
-        return 1;
-    } else {
-        return if @arg < 2;
-        return $self->encode($msg->{where}, $msg->{nick}, $arg[0], "@arg[1..$#arg]");
-    }
+  module_register($self, 'SERVER', 'commanded');
+
+  return MODULE_EAT_NONE;
 }
 
-sub encode {
-    my ($self, $target, $sender, $algorithm, $input) = @_;
-
-    my $digest = $input;
-    foreach ($algorithm) {
-        $digest =~ tr[a-zA-Z][n-za-mN-ZA-M] when 'rot13';
-        $digest = uc md5_hex($digest)       when 'md5';
-        $digest = sha256_hex($digest)       when 'sha256';
-        $digest = sha512_hex($digest)       when 'sha512';
-        $digest = crc32_hex($digest)        when 'crc32';
-        $digest = encode_base64($digest)    when 'base64';
-        default { return 0 }
-    }
-    $self->reply($target, $sender, "$input ~> $digest");
-    return 1;
+sub Module_unregister
+{
+  my $self = shift;
 }
 
-sub help {
-    return (
-        'encode <algorithm> <what> -- Encode arbitrary input using an algorithm of your choice',
-        'encode -list -- Lists available algorithms'
-    )
+sub Bot_commanded
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my $cmd = ${ $_[0] };
+  my $bot_nick = $cmd->network->irc->nick_name;
+  my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
+  $DB::single = 1;
+  $cmd->parse(
+    encode => {
+      'l|list'      => OPTVAL_NONE,
+      'c|lowercase' => OPTVAL_NONE,
+      'C|uppercase' => OPTVAL_NONE,
+    }
+  );
+  return MODULE_EAT_NONE unless $cmd->valid;
+
+  if ($cmd->name eq 'encode')
+  {
+    if (exists $cmd->opts->{list})
+    {
+      module_send_event(irc_msg_send => $cmd->network, $target,
+        "I support the following algorithms: @algorithm_list");
+      return MODULE_EAT_ALL;
+    }
+
+    # TODO: BadCmd
+    return MODULE_EAT_NONE if $cmd->argc < 2;
+
+    my $case;
+    if (exists $cmd->opts->{uppercase})
+    {
+      $case = sub { return uc $_[0] };
+    }
+    elsif (exists $cmd->opts->{lowercase})
+    {
+      $case = sub { return lc $_[0] };
+    }
+    else
+    {
+      $case = sub { return $_[0] };
+    }
+    encode($cmd->network, $target, $case, @{$cmd->args});
+    return MODULE_EAT_NONE;
+  }
+}
+
+sub encode
+{
+  my ($network, $target, $case, $algorithm, @input) = @_;
+
+  my $digest = join ' ', @input;
+  foreach ($algorithm)
+  {
+    no warnings 'experimental::smartmatch';
+    $digest =~ tr[a-zA-Z][n-za-mN-ZA-M] when 'rot13';
+    $digest = md5_hex($digest)          when 'md5';
+    $digest = sha256_hex($digest)       when 'sha256';
+    $digest = sha512_hex($digest)       when 'sha512';
+    $digest = crc32_hex($digest)        when 'crc32';
+    $digest = encode_base64($digest)    when 'base64';
+    default { return 0 }
+  }
+  $digest = $case->($digest);
+  module_send_event(irc_msg_send => $network, $target, "Result: $digest");
+  return 1;
 }
 
 1;
