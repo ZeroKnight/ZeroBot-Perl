@@ -1,0 +1,170 @@
+package ZeroBot::Module::ModuleManager;
+
+use Moo;
+
+use ZeroBot::Common -consts_cmd;
+use ZeroBot::Module -std;
+use ZeroBot::Command;
+use ZeroBot::Module::Loader -all;
+
+our $Name        = 'Module Manager';
+our $Author      = 'ZeroKnight';
+our $Description = "Interface for ZeroBot's module loader.";
+
+sub Module_register
+{
+  my $self = shift;
+
+  module_register($self, 'SERVER', 'commanded');
+
+  return MODULE_EAT_NONE;
+}
+
+sub Module_unregister
+{
+  my $self = shift;
+}
+
+sub Bot_commanded
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my $cmd = ${ $_[0] };
+  my $bot_nick = $cmd->network->irc->nick_name;
+  my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
+
+  $cmd->parse(
+    module   => {},
+    protocol => {},
+  );
+  return MODULE_EAT_NONE unless $cmd->valid;
+
+  # TODO: Handle protocol
+  return MODULE_EAT_NONE if $cmd->name eq 'protocol';
+
+  my $subcmd = ZeroBot::Command->new('!'.$cmd->args_str);
+  $subcmd->parse(
+    load => {
+      'd|dir' => OPTVAL_REQUIRED,
+    },
+    unload => {},
+    reload => {},
+    list => {
+      'a|available' => OPTVAL_NONE,
+      'd|dir'       => OPTVAL_REQUIRED,
+    },
+    is => {
+      'a|available' => OPTVAL_NONE,
+      'l|loaded'    => OPTVAL_NONE,
+      'd|dir'       => OPTVAL_REQUIRED,
+    },
+  );
+  return MODULE_EAT_NONE unless $subcmd->valid;
+
+  if ($subcmd->name eq 'load')
+  {
+    my @success;
+    return MODULE_EAT_ALL unless $subcmd->argc;
+    foreach my $arg (@{$subcmd->args})
+    {
+      my $m = module_load($arg, $subcmd->opts->{dir});
+      if ($m->has_handle)
+      {
+        push @success, $arg;
+      }
+      else
+      {
+        if ($m->bad_module)
+        {
+          module_send_event(irc_msg_send => $cmd->network, $target,
+            "'$arg' doesn't appear to be a feature module");
+        }
+        else
+        {
+          module_send_event(irc_msg_send => $cmd->network, $target,
+            "Failed to load '$arg'");
+        }
+      }
+    }
+    local $" = ', ';
+    module_send_event(irc_msg_send => $cmd->network, $target,
+      "Successfully loaded: @success") if @success;
+  }
+  elsif ($subcmd->name eq 'unload')
+  {
+    my @unloaded;
+    return MODULE_EAT_ALL unless $subcmd->argc;
+    foreach my $arg (@{$subcmd->args})
+    {
+      my $r = module_unload($arg);
+      if ($r)
+      {
+        push @unloaded, $arg;
+      }
+      elsif ($r == -1)
+      {
+        module_send_event(irc_msg_send => $cmd->network, $target,
+          "'$arg' is not loaded");
+      }
+    }
+    local $" = ', ';
+    module_send_event(irc_msg_send => $cmd->network, $target,
+      "Unloaded: @unloaded") if @unloaded;
+  }
+  elsif ($subcmd->name eq 'reload')
+  {
+    my @success;
+    return MODULE_EAT_ALL unless $subcmd->argc;
+    foreach my $arg (@{$subcmd->args})
+    {
+      my $m = module_reload($arg);
+      if ($m->has_handle)
+      {
+        push @success, $arg;
+      }
+      else
+      {
+        module_send_event(irc_msg_send => $cmd->network, $target,
+          "Failed to reload '$arg'");
+      }
+    }
+    local $" = ', ';
+    module_send_event(irc_msg_send => $cmd->network, $target,
+      "Successfully reloaded: @success") if @success;
+  }
+  elsif ($subcmd->name eq 'list')
+  {
+    local $" = ', ';
+    my $msg;
+    if (exists $subcmd->opts->{available})
+    {
+      # TODO: Option to filter loaded modules
+      my @avail = module_list_available($subcmd->opts->{dir});
+      $msg = "Available modules: @avail";
+    }
+    else
+    {
+      my @loaded = sort(module_list_loaded());
+      $msg = "Loaded modules: @loaded";
+    }
+    module_send_event(irc_msg_send => $cmd->network, $target, $msg);
+  }
+  elsif ($subcmd->name eq 'is')
+  {
+    my $module = $subcmd->args->[0];
+    if (exists $subcmd->opts->{available})
+    {
+      my $r = module_is_available($module, $subcmd->opts->{dir});
+      module_send_event(irc_msg_send => $cmd->network, $target,
+        $r ? "Yep, it's available." : "I can't find that module...");
+    }
+    elsif (exists $subcmd->opts->{loaded})
+    {
+      my $r = module_is_loaded($module);
+      module_send_event(irc_msg_send => $cmd->network, $target,
+        $r ? "Yep, it's currently loaded." : "Nope, that module isn't loaded.");
+    }
+  }
+  return MODULE_EAT_ALL;
+}
+
+1;
