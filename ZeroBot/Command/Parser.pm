@@ -3,6 +3,7 @@ package ZeroBot::Command::Parser;
 use ZeroBot::Common -types;
 
 use Carp;
+use List::Util 'none';
 use ZeroBot::Command::Constants;
 
 use Moo;
@@ -508,7 +509,7 @@ sub _link_aliases
   return if $self->_seen_opt_names->{$opt};
   foreach my $names (keys %{$self->spec->{$cmdname}})
   {
-    next unless $opt =~ /$names/;
+    next if none { $opt eq $_ } split /\|/, $names;
     foreach my $alias (grep { $_ ne $opt } split /\|/, $names)
     {
       $self->_seen_opt_names->{$alias} = 1;
