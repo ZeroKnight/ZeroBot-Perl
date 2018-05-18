@@ -61,7 +61,7 @@ sub module_unload
   unless (module_is_loaded($module))
   {
     Log->warning("Module '$module' is not loaded");
-    return;
+    return -1;
   }
 
   ZBCore->plugin_del(_module_syndicator_name($module));

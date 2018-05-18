@@ -53,7 +53,7 @@ sub BUILD
   my $module = $self->filename_root;
 
   return unless try { require $self->filepath }
-  catch { Log->error("Failed to load module '$module': $_") };
+  catch { Log->error("Failed to load module '$module': $_"); 0 };
 
   no strict 'refs';
   unless (keys %{"ZeroBot::Module::${module}::"})
