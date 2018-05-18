@@ -38,7 +38,6 @@ sub Bot_commanded
   my $cmd = ${ $_[0] };
   my $bot_nick = $cmd->network->irc->nick_name;
   my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
-  $DB::single = 1;
   $cmd->parse(
     encode => {
       'l|list'      => OPTVAL_NONE,
