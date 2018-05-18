@@ -23,6 +23,12 @@ has name => (
   init_arg => undef,
 );
 
+has argc => (
+  is       => 'rwp',
+  isa      => Int,
+  init_arg => undef,
+);
+
 has args => (
   is        => 'rwp',
   isa       => ArrayRef[Str],
@@ -74,12 +80,6 @@ sub parse
   $self->_check_spec($spec);
   my $p = ZeroBot::Command::Parser->new(cmd => $self, spec => $spec);
   $p->parse();
-}
-
-sub argc
-{
-  my $self = shift;
-  return scalar @{$self->args}
 }
 
 sub args_str

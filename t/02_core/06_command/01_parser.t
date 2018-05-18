@@ -111,7 +111,7 @@ subtest 'Tokenizing and Extraction' => sub {
   };
 
   subtest 'Short Option parsing' => sub {
-    plan tests => 11;
+    plan tests => 12;
     $line = '!test -a 1 -a "2 2" -f -f 3 -f "4 4" -b -a=5 -a="6 6" -f=7 -f="8 8" -f';
     $cp = $token_test->($line); $cp->_next; $cp->cmd->_set_name($cp->_get_value); $cp->_next;
       $cp->_get_opt;
@@ -136,6 +136,11 @@ subtest 'Tokenizing and Extraction' => sub {
     is($cp->cmd->opts->{f}, '8 8', 'OPTIONAL type with explicit quoted value');
       delete $cp->cmd->opts->{f}; $cp->_get_opt;
     is($cp->cmd->opts->{f}, undef, 'OPTIONAL type with no value, end of line');
+
+    $line = '!test -a';
+    $cmd = ZeroBot::Command->new(line => $line);
+    $cmd->parse(test => {a => OPTVAL_NONE});
+    ok(exists $cmd->opts->{a} && !$cmd->argc, 'Option type NONE as the only element of a command parsed as option only');
   };
 
   subtest 'Option cluster parsing' => sub {
@@ -181,7 +186,7 @@ subtest 'Tokenizing and Extraction' => sub {
   };
 
   subtest 'Long Options parsing' => sub {
-    plan tests => 14;
+    plan tests => 15;
     $line = '!test --add 1 --add "2 2" --foo --foo 3 --foo "4 4" --bar --add=5 --add="6 6" --foo=7 --foo="8 8" --foo';
     $cp = $token_test->($line); $cp->_next; $cp->cmd->_set_name($cp->_get_value); $cp->_next;
       $cp->_get_opt_long;
@@ -189,13 +194,13 @@ subtest 'Tokenizing and Extraction' => sub {
       $cp->_get_opt_long;
     is($cp->cmd->opts->{add}, '2 2', 'REQUIRED type with quoted value');
       $cp->_get_opt_long;
-    is($cp->cmd->opts->{foo}, undef, 'OPTIONAL type with no value');
+    ok(exists $cp->cmd->opts->{foo}, 'OPTIONAL type with no value');
       $cp->_get_opt_long;
     is($cp->cmd->opts->{foo}, 3,     'OPTIONAL type with value');
       $cp->_get_opt_long;
     is($cp->cmd->opts->{foo}, '4 4', 'OPTIONAL type with quoted value');
       $cp->_get_opt_long;
-    is($cp->cmd->opts->{bar}, undef, 'NONE type with no value');
+    ok(exists $cp->cmd->opts->{bar}, 'NONE type with no value');
       $cp->_get_opt_long;
     is($cp->cmd->opts->{add}, 5,     'REQUIRED type with explicit value');
       $cp->_get_opt_long;
@@ -205,7 +210,7 @@ subtest 'Tokenizing and Extraction' => sub {
       $cp->_get_opt_long;
     is($cp->cmd->opts->{foo}, '8 8', 'OPTIONAL type with explicit quoted value');
       delete $cp->cmd->opts->{foo}; $cp->_get_opt_long;
-    is($cp->cmd->opts->{foo}, undef, 'OPTIONAL type with no value, end of line');
+    ok(exists $cp->cmd->opts->{foo}, 'OPTIONAL type with no value, end of line');
 
     $line = '!test --lorem-ipsum --lorem-ipsum 1 --lorem-ipsum=2';
     $cp = $token_test->($line); $cp->_next; $cp->cmd->_set_name($cp->_get_value); $cp->_next;
@@ -215,6 +220,11 @@ subtest 'Tokenizing and Extraction' => sub {
     is($cp->cmd->opts->{'lorem-ipsum'}, 1,     'Multi-word name, with value');
       $cp->_get_opt_long;
     is($cp->cmd->opts->{'lorem-ipsum'}, 2,     'Multi-word name, with explicit value');
+
+    $line = '!test --foo';
+    $cmd = ZeroBot::Command->new(line => $line);
+    $cmd->parse(test => {foo => OPTVAL_NONE});
+    ok(exists $cmd->opts->{foo} && !$cmd->argc, 'Option type NONE as the only element of a command parsed as option only');
   };
 };
 
@@ -230,6 +240,7 @@ $cmd->parse(test => {
 });
 my $expected = ZeroBot::Command->new(line => $line);
 $expected->_set_name('test');
+$expected->_set_argc(4);
 $expected->_set_args(['bar', 'baz', 'biz bang', '--bing']);
 $expected->_set_opts({a => undef, b => 5, bar => 5, f => undef, foo => undef});
 $expected->_set_expected(1);
@@ -292,6 +303,7 @@ $cmd = ZeroBot::Command->new(line => $line);
 $cmd->parse(test => {f => OPTVAL_OPTIONAL, add => OPTVAL_REQUIRED});
 $expected = ZeroBot::Command->new(line => $line);
 $expected->_set_name('test');
+$expected->_set_argc(3);
 $expected->_set_args([qw/foo bar baz/]);
 $expected->_set_opts({add => 1, f => 2});
 $expected->_set_expected(1);

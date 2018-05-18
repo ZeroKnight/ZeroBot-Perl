@@ -85,11 +85,20 @@ sub parse
   }
   $self->_next;
 
+  # If the option spec for the command is empty, assume anything that looks like
+  # an option is an argument.
+  $self->_set_parse_opts(0)
+    unless scalar keys %{$self->spec->{$self->cmd->name}};
+
   # Parse the remainder of the command
   while ($self->pos < $self->end)
   {
     my $c = $self->_current;
-    if ($c eq ' ')
+    if (!defined $c)
+    {
+      $self->_error('Unexpected end of input');
+    }
+    elsif ($c eq ' ')
     {
       $self->_next; # Skip extra non-quoted spaces
     }
@@ -116,7 +125,7 @@ sub parse
         }
         else
         {
-          unless (defined $c and $c ne ' ')
+          if ($self->_peek eq ' ')
           {
             $self->_error('Expected character after option specifier');
             return $self->cmd;
@@ -126,13 +135,9 @@ sub parse
       }
       else
       {
-        # No longer parsing options, just push to the argument stack
+        # Not parsing options, just push to the argument stack
         $self->_get_arg;
       }
-    }
-    elsif (!defined $c)
-    {
-      $self->_error('Unexpected end of input') unless $self->_current;
     }
     else
     {
@@ -141,6 +146,7 @@ sub parse
     return $self->cmd if $self->failed;
   }
   $self->cmd->_set_valid(1);
+  $self->cmd->_set_argc(scalar @{$self->cmd->args});
   return $self->cmd;
 }
 
@@ -316,8 +322,7 @@ sub _get_opt
     else # OPTVAL_NONE
     {
       $self->cmd->opts->{$opt} = undef;
-      my $p = $self->_peek;
-      last unless defined $p; # Nothing else to parse, break out
+      my $p = $self->_peek // ' ';
       if ($p eq '-')
       {
         $self->_error("Erroneous '-' in option grouping", $self->pos + 1);
@@ -376,8 +381,8 @@ sub _get_opt_long
   if ($req > OPTVAL_NONE)
   {
     my $val;
-    my $n = $self->_current;
-    if (defined $n and $n eq '=')
+    my $c = $self->_current;
+    if (defined $c and $c eq '=')
     {
       # Using equals explicitly denotes a value, regardless of whether an option
       # value is optional or required.
@@ -390,7 +395,7 @@ sub _get_opt_long
       }
       $self->_next;
     }
-    elsif (defined $n)
+    elsif (defined $c)
     {
       $self->_next;
       if ($req == OPTVAL_REQUIRED)
@@ -423,7 +428,8 @@ sub _get_opt_long
   else # OPTVAL_NONE
   {
     $self->cmd->opts->{$opt} = undef;
-    if ($self->_current eq '=')
+    my $c = $self->_current;
+    if (defined $c and $c eq '=')
     {
       # Ignore explicit option value; discard result of _get_value
       $self->_warn(
@@ -465,6 +471,7 @@ sub _get_long_name
       return;
     }
   }
+  return $name;
 }
 
 # Determines if the given option name is in the option spec
