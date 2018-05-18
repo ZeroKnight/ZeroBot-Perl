@@ -39,13 +39,12 @@ sub module_load
   {
     ZBCore->plugin_add(_module_syndicator_name($module), $m->handle);
     ZBCore->modules->{$module} = $m;
-    return $m;
   }
   else
   {
-    delete $INC{$file};
-    return;
+    delete $INC{$file} unless $m->bad_module;
   }
+  return $m;
 }
 
 # NOTE: While it is possible to "fully" unload a Perl module by nuking it from
@@ -88,6 +87,7 @@ sub module_reload
 sub module_list_available
 {
   my $moddir = defined $_[0] ? path($_[0]) : ZBCore->module_dir;
+  return () unless $moddir->exists();
   return map(substr($_->basename, 0, -3), $moddir->children(qr/.+\.pm$/));
 }
 
