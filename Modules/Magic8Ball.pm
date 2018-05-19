@@ -1,55 +1,61 @@
-package Modules::Magic8Ball;
+package ZeroBot::Module::Magic8Ball;
 
-use strict;
-use warnings;
+use Moo;
+use ZeroBot::Common -consts_cmd;
+use ZeroBot::Module -std;
 
-use parent qw(ZeroBot::Module);
-
-our $Name = 'Magic8Ball';
-our $Author = 'ZeroKnight';
+our $Name        = 'Magic 8-Ball';
+our $Author      = 'ZeroKnight';
 our $Description = 'Simulates the classic Magic 8-Ball toy';
 
-sub commanded {
-    my ($self, $msg, $cmd) = @_;
-    my @arg = @{ $cmd->{arg} };
+my $dbh;
 
-    return unless $cmd->{name} eq '8ball';
+sub Module_register
+{
+  my $self = shift;
 
-    if("@arg" =~ /\S+\?\s*$/) {
-        $self->answer($msg->{where}, $msg->{nick});
-    } else {
-        $self->invalid($msg->{where}, $msg->{nick});
-    }
+  # TODO: logging
+
+  module_register($self, 'SERVER', 'commanded');
+
+  $dbh = ZBCore->db->new_connection('Magic8Ball');
+  $dbh->do(q{
+    CREATE TABLE IF NOT EXISTS [magic8ball] (
+      [answer]  TEXT NOT NULL UNIQUE,
+      [refusal] INTEGER DEFAULT 1,
+      [id]      INTEGER PRIMARY KEY)
+  });
+
+  return MODULE_EAT_NONE;
 }
 
-sub answer {
-    my ($self, $target, $asker) = @_;
-    my $dbh = $self->Bot->_dbh;
-
-    my @ary = $dbh->selectrow_array(q{
-        SELECT * FROM magic_8ball
-        WHERE refusal = 0
-        ORDER BY RANDOM() LIMIT 1
-    });
-    $self->reply($target, $asker, $ary[0]);
+sub Module_unregister
+{
+  my $self = shift;
+  ZBCore->db->close_connection($dbh);
 }
 
-sub invalid {
-    my ($self, $target, $asker) = @_;
-    my $dbh = $self->Bot->_dbh;
+sub Bot_commanded
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my $cmd = ${ $_[0] };
+  my $bot_nick = $cmd->network->irc->nick_name;
+  my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
+  $cmd->parse('8ball' => {});
+  return MODULE_EAT_NONE unless $cmd->valid;
 
-    my @ary = $dbh->selectrow_array(q{
-        SELECT * FROM magic_8ball
-        WHERE refusal = 1
-        ORDER BY RANDOM() LIMIT 1
-    });
-    $self->reply($target, $asker, $ary[0]);
-}
-
-sub help {
-    return (
-        '8ball <question> -- Ask the Magic 8-Ball a question!'
-    )
+  if ($cmd->name eq '8ball')
+  {
+    my $asker = $cmd->src_nick;
+    my @response = $dbh->selectrow_array(q{
+      SELECT * FROM magic8ball
+      WHERE refusal = ?
+      ORDER BY RANDOM() LIMIT 1
+    }, undef, $cmd->args_str =~ /\S+\?\s*$/ ? 0 : 1);
+    module_send_event(irc_msg_send => $cmd->network, $target,
+      "$asker: $response[0]");
+  }
+  return MODULE_EAT_ALL;
 }
 
 1;
