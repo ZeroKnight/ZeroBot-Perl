@@ -94,7 +94,7 @@ sub Bot_commanded
       respond(msg => $cmd->network, $target, '`fortune` is not available :(');
     }
   }
-  return MODULE_EAT_NONE;
+  return MODULE_EAT_ALL;
 }
 
 sub Bot_irc_joined
