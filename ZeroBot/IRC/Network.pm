@@ -137,4 +137,10 @@ sub get_next_alt
   }
 }
 
+sub is_chanop
+{
+  my ($self, $channel) = @_;
+  return $self->irc->is_channel_operator($channel, $self->nick);
+}
+
 1;
