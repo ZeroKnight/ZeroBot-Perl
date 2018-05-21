@@ -130,7 +130,7 @@ sub Bot_irc_msg_public
   my @berate_nicks = Config->get_as_list($cfg->{Berate}{nicks});
   if ($cfg->{Berate}{enabled} and any {$msg->src_nick =~ /$_/} @berate_nicks)
   {
-    if (rand(1) * 100 <= $cfg->{Berate}{chance})
+    if (rand(100) <= $cfg->{Berate}{chance})
     {
       my @ary = $dbh->selectrow_array(q{
         SELECT * FROM chat_berate
