@@ -1,5 +1,5 @@
 use strictures 2;
-use Test::More tests => 9;
+use Test::More tests => 11;
 
 BEGIN { use_ok('ZeroBot::Module', '-all') }
 
@@ -13,6 +13,7 @@ can_ok('ZeroBot::Module',
   map("module_$_", qw(
     register
     send_event
+    delay_event
     get_config
   ))
 );
@@ -42,3 +43,10 @@ subtest 'module_get_config' => sub {
   $c = module_get_config('0123456');
   is($c, undef, 'undef returned for module without config');
 };
+
+TODO: {
+  # Send mock events that TestModule.pm registers for
+  local $TODO = 'Need to test module_(send|delay)_event';
+  fail('module_send_event');
+  fail('module_delay_event');
+}

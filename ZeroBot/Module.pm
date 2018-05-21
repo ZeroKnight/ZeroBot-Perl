@@ -18,7 +18,7 @@ use parent 'Exporter::Tiny';
 our @EXPORT = ();
 our @EXPORT_OK = (
   map("module_$_", qw(
-    register send_event get_config
+    register send_event delay_event get_config
   )),
   keys %constants,
 );
@@ -37,6 +37,12 @@ sub module_send_event
 {
   my ($event, @args) = @_;
   ZBCore->send_event($event, @args);
+}
+
+sub module_delay_event
+{
+  my ($seconds, $event, @args) = @_;
+  return ZBCore->delay([$event, @args], $seconds);
 }
 
 sub module_get_config
