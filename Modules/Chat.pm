@@ -196,18 +196,18 @@ sub init_tables
   {
     $dbh->do(qq{
       CREATE TABLE IF NOT EXISTS [chat_$table] (
-      [phrase] TEXT NOT NULL ON CONFLICT FAIL UNIQUE,
-      [action] INTEGER DEFAULT 0,
-      [id] INTEGER PRIMARY KEY)
+        [phrase] TEXT NOT NULL ON CONFLICT FAIL UNIQUE,
+        [action] INTEGER DEFAULT 0,
+        [id]     INTEGER PRIMARY KEY)
     });
   }
 
   $dbh->do(q{
     CREATE TABLE IF NOT EXISTS [chat_questioned] (
-    [phrase] TEXT NOT NULL ON CONFLICT FAIL UNIQUE,
-    [action] INTEGER DEFAULT 0,
-    [agree] INTEGER NOT NULL ON CONFLICT FAIL,
-    [id] INTEGER PRIMARY KEY)
+      [phrase] TEXT NOT NULL ON CONFLICT FAIL UNIQUE,
+      [action] INTEGER DEFAULT 0,
+      [agree]  INTEGER NOT NULL ON CONFLICT FAIL,
+      [id]     INTEGER PRIMARY KEY)
   });
 }
 
