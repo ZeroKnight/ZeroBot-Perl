@@ -73,8 +73,8 @@ sub Bot_commanded
       $case = sub { return $_[0] };
     }
     encode($cmd->network, $target, $case, @{$cmd->args});
-    return MODULE_EAT_NONE;
   }
+  return MODULE_EAT_NONE;
 }
 
 sub encode
