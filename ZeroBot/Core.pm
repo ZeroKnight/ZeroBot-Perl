@@ -138,6 +138,8 @@ sub init
         sig_HUP
 
         ZBCore_plugin_error
+
+        delayed_send_event
       )],
     ],
   );
@@ -244,6 +246,17 @@ sub ZBCore_plugin_error
   # TODO ...
 
   CORE::say "Plugin error: $err";
+
+  # TODO: send error event
+}
+
+# Acts as a relay; intended to be the target event of a POE::Syndicator->delay()
+# call to allow modules to send a delayed SERVER event. This extra step is
+# needed as POE::Syndicator curiously offers no way to do this directly.
+sub delayed_send_event
+{
+  my ($self, $event) = @_[OBJECT, ARG0];
+  $self->send_event_now($event->[0], @$event[1..$#$event]);
 }
 
 sub add_protocol

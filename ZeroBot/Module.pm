@@ -41,8 +41,8 @@ sub module_send_event
 
 sub module_delay_event
 {
-  my ($seconds, $event, @args) = @_;
-  return ZBCore->delay([$event, @args], $seconds);
+  my ($event_aref, $seconds) = @_;
+  return ZBCore->delay([delayed_send_event => $event_aref], $seconds);
 }
 
 sub module_get_config
