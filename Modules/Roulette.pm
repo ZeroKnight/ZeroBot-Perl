@@ -1,63 +1,167 @@
-package Modules::Roulette;
+package ZeroBot::Module::Roulette;
 
-use strict;
-use warnings;
+use List::Util 'first';
 
-use parent qw(ZeroBot::Module);
-use YAML::XS qw(LoadFile);
+use Moo;
+use ZeroBot::Common -consts_cmd;
+use ZeroBot::Module qw(:std module_delay_event);
+use ZeroBot::Util::IRC 'is_valid_chan_name_lax';
 
-our $Name        = 'Roulette'; # NOTE: Can we get this from the package name?
-our $Author      = 'ZeroKnight';
+our $Name  = 'Roulette';
+our $Author  = 'ZeroKnight';
 our $Description = 'Simple Russian Roulette game with a 6-shooter';
 
-my $config = LoadFile('config/Roulette.yaml');
-my $master           = $config->{settings}{master};
-my $scapegoating     = $config->{settings}{scapegoating};
-my $scapegoat_chance = $config->{settings}{'scapegoat-chance'};
-my $kick             = $config->{settings}{kick};
-my $bullet           = int(rand(6));
-my $shot             = 0;
+my $cfg;
+my $bullet;
+my %target;
 
-sub commanded {
-    my ($self, $msg, $cmd) = @_;
-    my @arg = @{ $cmd->{arg} };
-    my $victim = $msg->{nick};
+sub Module_register
+{
+  my $self = shift;
 
-    return unless $cmd->{name} eq 'roulette';
-    return if $msg->{where} !~ /^#/;
+  # TODO: logging
 
-    if ($shot++ != $bullet) {
-        $self->privmsg($msg->{where}, "CLICK! Who's next?");
-        return;
-    } elsif ($scapegoating and $victim eq $master and
-      int(rand($scapegoat_chance)) == 1) {
-        my @nicklist = grep { $_ ne $master } $self->Bot->_ircobj->channel_list($msg->{where});
-        my $scapegoat = $nicklist[int(rand(scalar @nicklist))];
-        $self->privmsg($msg->{where},
-            "$victim pulls the trigger, but the bullet somehow misses and hits $scapegoat instead!"
-        );
-        if ($scapegoat eq $self->Bot->Nick) {
-            if ($self->ischanop($msg->{where})) {
-                $self->kick($msg->{where}, $self->Bot->Nick, "BANG! Killed self.");
-                sleep 3;
-                $self->joinchan($msg->{where});
-            }
-            $self->emote($msg->{where}, 'has been resurrected by forces unknown');
-        }
-    } elsif ($kick and $self->ischanop) {
-        $self->kick($msg->{where}, $victim, "BANG! You died.");
-    } else {
-        $self->privmsg($msg->{where}, "BANG! $victim died");
-    }
-    $self->emote($msg->{where}, 'loads a single round and spins the chamber');
-    $bullet = int(rand(6));
-    $shot = 0;
+  module_register($self, 'SERVER', 'commanded');
+
+  $cfg = Config->modules->{Roulette};
+
+  return MODULE_EAT_NONE;
 }
 
-sub help {
-    return (
-        'roulette -- Pull the trigger...'
-    )
+sub Module_unregister
+{
+  my $self = shift;
+
+  undef %target;
+  $bullet = {};
+}
+
+sub Bot_commanded
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my $cmd = ${ $_[0] };
+  $cmd->parse(roulette => {});
+  return MODULE_EAT_NONE unless $cmd->valid and $cmd->name eq 'roulette';
+
+  # Playing by oneself is just suicide.
+  return unless is_valid_chan_name_lax($cmd->dest);
+
+  %target = (network => $cmd->network, dest => $cmd->dest);
+
+  # Load the gun if this is the first game in the channel
+  reload(silent => 1)
+    unless exists $bullet->{$target{network}->name}{$target{dest}};
+
+  my $scapegoat;
+  my $victim = $cmd->src_nick;
+
+  # TODO: Laugh and kill the puppeteer instead (unless master)
+  return MODULE_EAT_ALL if $victim eq $cmd->network->nick;
+
+  if ($bullet->{$target{network}->name}{$target{dest}}-- > 0)
+  {
+    reply("CLICK! Who's next?");
+    return MODULE_EAT_ALL;
+  }
+  else
+  {
+    if ($victim eq $cfg->{Master} and $cfg->{Scapegoating}{enabled} and
+        rand(100) <= $cfg->{Scapegoating}{chance})
+    {
+      # PROTECT ME, SQUIRE!
+      my @nicklist = grep { $_ ne $cfg->{Master} }
+        $cmd->network->irc->channel_list($cmd->dest);
+      $scapegoat = $nicklist[rand @nicklist];
+    }
+    bang($victim, $scapegoat);
+  }
+  return MODULE_EAT_ALL;
+}
+
+sub bang
+{
+  my ($victim, $scapegoat) = @_;
+  my $irc = $target{network}->irc;
+  my $bot_nick = $target{network}->nick;
+
+  if (defined $scapegoat)
+  {
+    reply("$victim pulls the trigger, but the bullet somehow misses and hits $scapegoat instead!");
+    $victim = $scapegoat;
+  }
+
+  if (should_kick())
+  {
+    if ($victim eq $bot_nick)
+    {
+      $irc->yield(kick => $target{dest}, $bot_nick,
+        'BANG! Shoots themself in the head.');
+
+      my $channel = first { $_->[0] eq $target{dest} }
+        @{$target{network}->channels};
+      my ($name, $key) = @$channel;
+      $target{network}->irc->delay([join => $name, $key ? $key : ()], 3);
+
+      module_delay_event([irc_action_send => $target{network},
+        $target{dest}, 'has been resurrected by forces unknown'], 3);
+      reload(delay => 4);
+      return;
+    }
+    else
+    {
+      $irc->yield(kick => $target{dest}, $victim, 'BANG! You died.');
+    }
+  }
+  else
+  {
+    if ($victim eq $bot_nick)
+    {
+      emote('takes a bullet to the brain, but is subsequently resurrected by forces unknown');
+    }
+    else
+    {
+      reply("BANG! $victim died.");
+    }
+  }
+  reload();
+}
+
+sub should_kick
+{
+  return $cfg->{KickOnDeath} && $target{network}->is_chanop($target{dest})
+    ? 1 : 0;
+}
+
+sub reload
+{
+  my %opts = @_;
+
+  # Chamber a round and spin the cylinder
+  $bullet->{$target{network}->name}{$target{dest}} = int(rand(6));
+
+  if (!$opts{silent})
+  {
+    my @payload = (irc_action_send => $target{network}, $target{dest},
+      'chambers a new round and spins the cylinder');
+    if (exists $opts{delay})
+    {
+      module_delay_event([@payload], $opts{delay});
+    }
+    else
+    {
+      module_send_event(@payload);
+    }
+  }
+}
+
+sub reply
+{
+  module_send_event(irc_msg_send => $target{network}, $target{dest}, @_);
+}
+
+sub emote
+{
+  module_send_event(irc_action_send => $target{network}, $target{dest}, @_);
 }
 
 1;

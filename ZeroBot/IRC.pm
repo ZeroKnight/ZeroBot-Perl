@@ -152,6 +152,7 @@ sub _create_network_session
         irc_disconnected
 
         irc_join
+        irc_kick
         irc_nick
 
         irc_302

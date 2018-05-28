@@ -5,7 +5,7 @@ use List::Util qw(any);
 
 use Moo;
 use ZeroBot::Common -consts_cmd;
-use ZeroBot::Module -std;
+use ZeroBot::Module qw(:std module_delay_event);
 
 our $Name        = 'Chat';
 our $Author      = 'ZeroKnight';
@@ -14,6 +14,7 @@ our $Description = 'Allows ZeroBot to chat and respond to conversation in variou
 my $dbh;
 my $cfg = Config->modules->{Chat};
 my $has_fortune;
+my %kicked_from;
 
 # \xa1 and \xbf are the inverted variants of ! and ?
 # \x203D is the interrobang
@@ -31,6 +32,7 @@ sub Module_register
     irc_msg_private
     irc_action
     irc_joined
+    irc_kicked
   ));
 
   $dbh = ZBCore->db->new_connection($Name);
@@ -105,13 +107,27 @@ sub Bot_irc_joined
   # Greet the channel upon joining
   if ($nick eq $network->irc->nick_name)
   {
-    my @ary = $dbh->selectrow_array(q{
-      SELECT * FROM chat_greetings
-      ORDER BY RANDOM() LIMIT 1;
-    });
-    respond($ary[1] ? 'action' : 'msg', $network, $channel, $ary[0]);
+    # Unless we were recently kicked from here...
+    unless ($kicked_from{$channel})
+    {
+      my @ary = $dbh->selectrow_array(q{
+        SELECT * FROM chat_greetings
+        ORDER BY RANDOM() LIMIT 1;
+      });
+      respond($ary[1] ? 'action' : 'msg', $network, $channel, $ary[0]);
+    }
+    delete $kicked_from{$channel};
   }
   return MODULE_EAT_NONE;
+}
+
+sub Bot_irc_kicked
+{
+  my ($self, $core) = splice @_, 0, 2;
+  my ($network, $channel, $nick, $who) = map($$_, @_[0..3]);
+
+  # Don't greet the channel on rejoin
+  $kicked_from{$channel} = 1 if $nick eq $network->irc->nick_name;
 }
 
 sub Bot_irc_msg_public
