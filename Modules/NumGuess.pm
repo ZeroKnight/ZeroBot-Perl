@@ -107,7 +107,7 @@ sub respond
 sub reply
 {
   module_send_event(irc_msg_send => $reply{network}, $reply{dest},
-    "$reply{nick}: @_");
+    "$reply{nick}: ", @_);
 }
 
 sub emote

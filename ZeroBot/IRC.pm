@@ -244,9 +244,10 @@ sub _start
   # NOTE: Set an alias?
 
   # Connector handles automatic reconnection to an IRC server
-  # $self->_ircobj->plugin_add(
-  #   Connector => POE::Component::IRC::Plugin::Connector->new()
-  # );
+  $heap->{connector} = POE::Component::IRC::Plugin::Connector->new();
+  $irc->plugin_add(
+    Connector => $heap->{connector}
+  );
 
   # Register for all messages/events, falling back to _default() if there is
   # no explicitly assigned callback
@@ -269,9 +270,10 @@ sub Bot_irc_msg_send
   my ($self, $core) = splice @_, 0, 2;
   my $network = ${$_[0]};
   my $dest    = ${$_[1]};
-  my $msg     = encode_utf8(${$_[2]});
+  my @msg     = map($$_, @_[2..($#_-1)]);
 
-  $network->irc->yield(privmsg => $dest, $msg);
+  local $" = '';
+  $network->irc->yield(privmsg => $dest, encode_utf8("@msg"));
   return MODULE_EAT_NONE;
 }
 
@@ -351,6 +353,15 @@ sub irc_join
   my $nick = parse_user($who);
 
   module_send_event(irc_joined => $network, $channel, $nick, $who);
+}
+
+sub irc_kick
+{
+  my ($self, $heap, $who, $channel) = @_[OBJECT, HEAP, ARG0, ARG1];
+  my ($network, $irc) = @{$heap}{'network', 'irc'};
+  my $nick = parse_user($who);
+
+  module_send_event(irc_kicked => $network, $channel, $nick, $who);
 }
 
 sub irc_nick
