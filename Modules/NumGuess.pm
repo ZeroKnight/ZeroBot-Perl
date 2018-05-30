@@ -45,8 +45,8 @@ sub Bot_commanded
 
   %reply = (
     network => $cmd->network,
-    dest => $cmd->dest,
-    nick => $cmd->src_nick,
+    dest    => $cmd->dest,
+    nick    => $cmd->src_nick,
   );
 
   # TODO: Randomize these phrases?

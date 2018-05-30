@@ -12,8 +12,8 @@ our $Author  = 'ZeroKnight';
 our $Description = 'Simple Russian Roulette game with a 6-shooter';
 
 my $cfg;
-my $bullet;
-my %target;
+my %reply;
+my $gamedata;
 
 sub Module_register
 {
@@ -25,15 +25,15 @@ sub Module_register
 
   $cfg = Config->modules->{Roulette};
 
+  $gamedata = {};
+  %reply    = ();
+
   return MODULE_EAT_NONE;
 }
 
 sub Module_unregister
 {
   my $self = shift;
-
-  undef %target;
-  $bullet = {};
 }
 
 sub Bot_commanded
@@ -46,21 +46,26 @@ sub Bot_commanded
   # Playing by oneself is just suicide.
   return unless is_valid_chan_name_lax($cmd->dest);
 
-  %target = (network => $cmd->network, dest => $cmd->dest);
-
-  # Load the gun if this is the first game in the channel
-  reload(silent => 1)
-    unless exists $bullet->{$target{network}->name}{$target{dest}};
+  %reply = (
+    network => $cmd->network,
+    dest    => $cmd->dest,
+    nick    => $cmd->src_nick,
+  );
 
   my $scapegoat;
   my $victim = $cmd->src_nick;
 
+  # Load the gun if this is the first game in the channel
+  my ($network, $channel) = ($reply{network}->name, $reply{dest});
+  reload(silent => 1) unless exists $gamedata->{$network}{$channel};
+  my $game = $gamedata->{$network}{$channel};
+
   # TODO: Laugh and kill the puppeteer instead (unless master)
   return MODULE_EAT_ALL if $victim eq $cmd->network->nick;
 
-  if ($bullet->{$target{network}->name}{$target{dest}}-- > 0)
+  if ($game->{bullet}-- > 0)
   {
-    reply("CLICK! Who's next?");
+    respond("CLICK! Who's next?");
     return MODULE_EAT_ALL;
   }
   else
@@ -81,12 +86,12 @@ sub Bot_commanded
 sub bang
 {
   my ($victim, $scapegoat) = @_;
-  my $irc = $target{network}->irc;
-  my $bot_nick = $target{network}->nick;
+  my $irc = $reply{network}->irc;
+  my $bot_nick = $reply{network}->nick;
 
   if (defined $scapegoat)
   {
-    reply("$victim pulls the trigger, but the bullet somehow misses and hits $scapegoat instead!");
+    respond("$victim pulls the trigger, but the bullet somehow misses and hits $scapegoat instead!");
     $victim = $scapegoat;
   }
 
@@ -94,22 +99,22 @@ sub bang
   {
     if ($victim eq $bot_nick)
     {
-      $irc->yield(kick => $target{dest}, $bot_nick,
+      $irc->yield(kick => $reply{dest}, $bot_nick,
         'BANG! Shoots themself in the head.');
 
-      my $channel = first { $_->[0] eq $target{dest} }
-        @{$target{network}->channels};
+      my $channel = first { $_->[0] eq $reply{dest} }
+        @{$reply{network}->channels};
       my ($name, $key) = @$channel;
-      $target{network}->irc->delay([join => $name, $key ? $key : ()], 3);
+      $reply{network}->irc->delay([join => $name, $key ? $key : ()], 3);
 
-      module_delay_event([irc_action_send => $target{network},
-        $target{dest}, 'has been resurrected by forces unknown'], 3);
+      module_delay_event([irc_action_send => $reply{network},
+        $reply{dest}, 'has been resurrected by forces unknown'], 3);
       reload(delay => 4);
       return;
     }
     else
     {
-      $irc->yield(kick => $target{dest}, $victim, 'BANG! You died.');
+      $irc->yield(kick => $reply{dest}, $victim, 'BANG! You died.');
     }
   }
   else
@@ -120,7 +125,7 @@ sub bang
     }
     else
     {
-      reply("BANG! $victim died.");
+      respond("BANG! $victim died.");
     }
   }
   reload();
@@ -128,20 +133,21 @@ sub bang
 
 sub should_kick
 {
-  return $cfg->{KickOnDeath} && $target{network}->is_chanop($target{dest})
+  return $cfg->{KickOnDeath} && $reply{network}->is_chanop($reply{dest})
     ? 1 : 0;
 }
 
 sub reload
 {
   my %opts = @_;
+  my ($network, $channel) = ($reply{network}->name, $reply{dest});
 
   # Chamber a round and spin the cylinder
-  $bullet->{$target{network}->name}{$target{dest}} = int(rand(6));
+  $gamedata->{$network}{$channel}{bullet} = int(rand(6));
 
   if (!$opts{silent})
   {
-    my @payload = (irc_action_send => $target{network}, $target{dest},
+    my @payload = (irc_action_send => $reply{network}, $reply{dest},
       'chambers a new round and spins the cylinder');
     if (exists $opts{delay})
     {
@@ -154,14 +160,14 @@ sub reload
   }
 }
 
-sub reply
+sub respond
 {
-  module_send_event(irc_msg_send => $target{network}, $target{dest}, @_);
+  module_send_event(irc_msg_send => $reply{network}, $reply{dest}, @_);
 }
 
 sub emote
 {
-  module_send_event(irc_action_send => $target{network}, $target{dest}, @_);
+  module_send_event(irc_action_send => $reply{network}, $reply{dest}, @_);
 }
 
 1;
