@@ -12,7 +12,7 @@ our $Author      = 'ZeroKnight';
 our $Description = 'Allows ZeroBot to chat and respond to conversation in various ways';
 
 my $dbh;
-my $cfg = Config->modules->{Chat};
+my $cfg;
 my $has_fortune;
 my %kicked_from;
 
@@ -35,6 +35,7 @@ sub Module_register
     irc_kicked
   ));
 
+  $cfg = Config->modules->{Chat};
   $dbh = ZBCore->db->new_connection($Name);
   init_tables();
 
