@@ -41,7 +41,7 @@ sub Bot_commanded
   my ($self, $core) = splice @_, 0, 2;
   my $cmd = ${ $_[0] };
   $cmd->parse('guess' => {});
-  return MODULE_EAT_NONE unless $cmd->valid;
+  return MODULE_EAT_NONE unless $cmd->valid and $cmd->name eq 'guess';
 
   %reply = (
     network => $cmd->network,
