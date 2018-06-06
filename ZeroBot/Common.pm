@@ -70,14 +70,14 @@ sub import
       my $file = $package =~ s|::|/|gr;
 
       # Avoid passing barewords to import if they don't start with '-'
-      @$args = map { substr($_, 0, 1) eq '-' ? $_ : "'$_'" } @$args;
+      my @import = map { substr($_, 0, 1) eq '-' ? $_ : "'$_'" } @$args;
 
       require "$file.pm";
       {
         local $@;
         eval qq{
           package $caller;
-          $package->import(@$args);
+          $package->import(@import);
         };
         croak "Failed to import '$package': $@" if $@;
       }
