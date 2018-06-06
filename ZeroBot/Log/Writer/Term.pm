@@ -9,7 +9,6 @@ sub write
 {
   my ($self, @msg) = @_;
   local $| = 1;
-  binmode STDOUT, ':encoding(utf8)';
   print "@msg";
 }
 

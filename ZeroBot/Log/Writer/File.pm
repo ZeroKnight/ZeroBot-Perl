@@ -74,7 +74,6 @@ sub _open
     warn "Could not open log file '", $self->filepath, "', $!";
     return;
   }
-  binmode $fh, ':encoding(utf8)';
   $fh->autoflush;
 
   $self->_set_handle($fh);
