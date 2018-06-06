@@ -1,9 +1,10 @@
 use strictures 2;
-use Test::More tests => 2;
+use Test::More tests => 3;
 
 BEGIN {
   use_ok('ZeroBot::Util', qw(
     tsprintf
+    clamp
   ));
 }
 
@@ -26,4 +27,13 @@ subtest 'tsprintf' => sub {
 
   is(tsprintf('That is 100% correct', {foo => 'bar'}),
     'That is 100% correct', 'Free-standing percent is literal');
+};
+
+subtest 'clamp' => sub {
+  plan tests => 5;
+  is(clamp(20, 10, 50), 20, '20, 10-50 => 20');
+  is(clamp(5, 10, 50),  10, '5,  10-50 => 10');
+  is(clamp(60, 10, 50), 50, '60, 10-50 => 50');
+  is(clamp(-1, 1, 10),  1,  '-1, 1-10  => 1');
+  is(clamp(-1, -5, 1),  -1, '-1, -5-1  => -1');
 };

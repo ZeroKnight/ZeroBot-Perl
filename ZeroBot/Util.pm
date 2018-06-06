@@ -1,10 +1,11 @@
 package ZeroBot::Util;
 
 use Carp;
+use List::Util qw(min max);
 
 use parent 'Exporter::Tiny';
 our @EXPORT    = qw();
-our @EXPORT_OK = qw(tsprintf);
+our @EXPORT_OK = qw(tsprintf clamp);
 our %EXPORT_TAGS = ();
 
 sub tsprintf
@@ -33,6 +34,12 @@ sub tsprintf
   $format =~ s/((?<!%)%\{?(\w+)\}?)/$expand->($1, $2)/ge;
   $format =~ s/%%/%/g;
   return $format;
+}
+
+sub clamp
+{
+  my ($val, $min, $max) = @_;
+  return min(max($min, $val), $max);
 }
 
 1;
