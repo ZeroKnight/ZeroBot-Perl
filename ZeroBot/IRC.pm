@@ -46,6 +46,11 @@ sub Module_register
   return MODULE_EAT_NONE;
 }
 
+sub Module_unregister
+{
+  my $self = shift;
+}
+
 sub _initialize_irc
 {
   my $self = shift;
