@@ -16,7 +16,8 @@ my %import_map = (
   },
 
   string => {
-    'ZeroBot::Util' => [qw/tsprintf/],
+    feature           => ['fc'],
+    'ZeroBot::Util'   => [qw/tsprintf/],
     'Text::Pluralize' => [],
   },
 
