@@ -43,6 +43,7 @@ sub import
   my $caller = caller;
 
   # Import some common modules
+  utf8->import::into($caller);
   feature->import::into($caller, ':5.10');
   strictures->import::into({package => $caller, version => 2});
   Try::Tiny->import::into($caller);

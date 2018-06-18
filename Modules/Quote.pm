@@ -1,6 +1,5 @@
 package ZeroBot::Module::Quote;
 
-use utf8;
 use Moo;
 use ZeroBot::Common -consts_cmd, -string;
 use ZeroBot::Module -std;
