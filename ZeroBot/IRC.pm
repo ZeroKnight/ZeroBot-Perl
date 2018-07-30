@@ -9,6 +9,8 @@ use ZeroBot::Module::Loader -load;
 
 use ZeroBot::IRC::Network;
 use ZeroBot::IRC::Server;
+use ZeroBot::IRC::User;
+use ZeroBot::IRC::Reply;
 use ZeroBot::IRC::Message;
 use ZeroBot::IRC::Command;
 
@@ -44,6 +46,11 @@ sub Module_register
   module_register($self, 'SERVER', 'all');
   $self->_initialize_irc;
   return MODULE_EAT_NONE;
+}
+
+sub Module_unregister
+{
+  my $self = shift;
 }
 
 sub _initialize_irc
@@ -249,11 +256,10 @@ sub _start
     Connector => $heap->{connector}
   );
 
-  # Register for all messages/events, falling back to _default() if there is
+  # Register for all messages/events, falling back to irc_default() if there is
   # no explicitly assigned callback
   $irc->yield(register => 'all');
 
-  # ...and connect!
   $irc->yield(connect => {});
 }
 
@@ -381,7 +387,12 @@ sub irc_spoke
   my ($heap, $src, $dests, $body) = @_[HEAP, ARG0 .. ARG2];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $cmdchar = ZBCore->cmdchar;
-  my %event = (network => $network, src => $src, dests => $dests);
+
+  my %event = (
+    network => $network,
+    src => ZeroBot::IRC::User->new($src),
+    dests => $dests
+  );
 
   # Determine whether this is a plain message, or a command
   if ($msgtype < MSGTYPE_NOTICE and substr($body, 0, 1) eq $cmdchar)
@@ -441,16 +452,17 @@ sub irc_error
 sub irc_erroneous_nickname
 {
   # 432 ERR_ERRONEUSNICKNAME
-  my ($self, $heap, $err) = @_[OBJECT, HEAP, ARG2];
+  my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $badnick = $err->[0];
+  my $rpl = ZeroBot::IRC::Reply->new($network, 432, @_[ARG0..ARG2]);
+  my $badnick = $rpl->parsed->[0];
   my $netname = $network->name;
 
   Log->error("[$netname] Erroneous Nickname: $badnick");
 
   # Let any intersted modules handle this event
   # NOTE: Not sure yet how we'll handle this event return here
-  my $eat = module_send_event(nick_erroneous => $badnick);
+  my $eat = module_send_event(nick_erroneous => $badnick, $rpl);
   return if $eat == MODULE_EAT_ALL;
 
   my $nicklen = $irc->isupport('NICKLEN');
@@ -478,7 +490,8 @@ sub irc_nickname_in_use
   # 433 ERR_NICKNAMEINUSE
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $nick = $network->nick;
+  my $rpl = ZeroBot::IRC::Reply->new($network, 433, @_[ARG0..ARG2]);
+  my $nick = $rpl->parsed->[0];
   my $netname = $network->name;
 
   Log->error("[$netname] Nick '$nick' already in use.");
@@ -510,25 +523,39 @@ sub irc_nickname_in_use
     $network->_set_nick($newnick);
     $irc->yield(nick => $newnick);
   }
-  module_send_event(nick_in_use => $nick);
+  module_send_event(nick_in_use => $nick, $rpl);
 }
 
 sub irc_default
 {
-  my ($event, $args) = @_[ARG0 .. $#_];
-  my @output = ("$event: ");
+  my ($heap, $event, $args) = @_[HEAP, ARG0 .. $#_];
+  my $network = $heap->{network};
+  my $netname = $network->name;
 
-  for my $arg (@$args) {
-    if (ref $arg eq 'ARRAY') {
+  # Catch any numeric replies without a callback
+  if ($event =~ /irc_(\d+)/)
+  {
+    my $rpl = ZeroBot::IRC::Reply->new($network, $1, @$args);
+    module_send_event(unhandled_numeric => $rpl);
+    Log->verbose("[$netname] Numeric $1: ", @{$rpl->msg});
+    return;
+  }
+
+  # Log any other unhandled event to debug log
+  my @output = ("Event $event: ");
+  for my $arg (@$args)
+  {
+    if (ref $arg eq 'ARRAY')
+    {
       push(@output, '[' . join(', ', @$arg) . ']');
     }
-    else {
+    else
+    {
       next unless defined $arg;
       push(@output, "'$arg'");
     }
   }
-  print join ' ', @output, "\n";
-  return;
+  Log->debug("[$netname] ", join(' ', @output));
 }
 
 1;
