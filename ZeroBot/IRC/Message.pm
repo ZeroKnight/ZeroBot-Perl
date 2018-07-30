@@ -22,6 +22,8 @@ use IRC::Utils qw(strip_color strip_formatting);
 use Moo;
 with 'ZeroBot::IRC::Event';
 
+has '+src' => (isa => InstanceOf['ZeroBot::IRC::User']);
+
 has type => (
   is      => 'rw',
   isa     => Int,

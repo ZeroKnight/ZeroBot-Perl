@@ -15,7 +15,7 @@ has network => (
 
 has src => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::IRC::User'],
+  isa      => Any, # Overwritten by consuming classes
   required => 1,
 );
 
