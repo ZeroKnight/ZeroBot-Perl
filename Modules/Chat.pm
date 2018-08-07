@@ -72,7 +72,7 @@ sub Bot_commanded
   if ($cmd->name =~ /^(say|do)$/n)
   {
     my $target = $cmd->opts->{to} //
-      ($cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest);
+      ($cmd->dest eq $bot_nick ? $cmd->src->nick : $cmd->dest);
     my $type = $cmd->name eq 'say' ? 'msg' : 'action';
     respond($type, $cmd->network, $target, $cmd->args_str);
   }
@@ -82,7 +82,7 @@ sub Bot_commanded
   }
   elsif ($cmd->name eq 'fortune')
   {
-    my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
+    my $target = $cmd->dest eq $bot_nick ? $cmd->src->nick : $cmd->dest;
     if ($has_fortune)
     {
       my @fortune;
@@ -141,11 +141,11 @@ sub Bot_irc_msg_public
   # to where the message was sent from
   # TODO: Create a utility function for determining target like this, or better
   # yet, bake it into IRC::Message
-  my $target = $msg->dest eq $bot_nick ? $msg->src_nick : $msg->dest;
+  my $target = $msg->dest eq $bot_nick ? $msg->src->nick : $msg->dest;
 
   # Berate: Spew hatred at configured users whenever they speak
   my @berate_nicks = Config->get_as_list($cfg->{Berate}{nicks});
-  if ($cfg->{Berate}{enabled} and any {$msg->src_nick =~ /$_/} @berate_nicks)
+  if ($cfg->{Berate}{enabled} and any {$msg->src->nick =~ /$_/} @berate_nicks)
   {
     if (rand(100) <= $cfg->{Berate}{chance})
     {
