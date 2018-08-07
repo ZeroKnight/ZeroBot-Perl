@@ -179,7 +179,7 @@ sub Bot_irc_msg_public
 
   # Respond to being mentioned...strangely
   # NOTE: Needs to be LOW priority
-  if ($msg->message =~ /$bot_nick/)
+  if ($msg->mentioned)
   {
     my @ary = $dbh->selectrow_array(q{
       SELECT * FROM chat_mentioned
