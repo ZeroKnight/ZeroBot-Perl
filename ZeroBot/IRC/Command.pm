@@ -6,7 +6,7 @@ use Import::Into;
 ZeroBot::Command::Constants->import::into(scalar caller);
 
 use Moo;
-with 'ZeroBot::IRC::Event';
+with map("ZeroBot::IRC::$_", qw/Event Answerable/);
 extends 'ZeroBot::Command';
 
 has '+src' => (isa => InstanceOf['ZeroBot::IRC::User']);

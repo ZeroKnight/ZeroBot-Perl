@@ -20,7 +20,7 @@ use Carp;
 use IRC::Utils qw(lc_irc strip_color strip_formatting);
 
 use Moo;
-with 'ZeroBot::IRC::Event';
+with map("ZeroBot::IRC::$_", qw/Event Answerable/);
 
 has '+src' => (isa => InstanceOf['ZeroBot::IRC::User']);
 
