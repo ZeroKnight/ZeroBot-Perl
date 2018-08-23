@@ -39,20 +39,15 @@ sub Bot_commanded
 {
   my ($self, $core) = splice @_, 0, 2;
   my $cmd = ${ $_[0] };
-  my $bot_nick = $cmd->network->irc->nick_name;
-  my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
   $cmd->parse('8ball' => {});
   return MODULE_EAT_NONE unless $cmd->valid and $cmd->name eq '8ball';
 
-  my $asker = $cmd->src_nick;
   my @response = $dbh->selectrow_array(q{
     SELECT * FROM magic8ball
     WHERE refusal = ?
     ORDER BY RANDOM() LIMIT 1
   }, undef, $cmd->args_str =~ /\S+\?\s*$/ ? 0 : 1);
-
-  module_send_event(irc_msg_send => $cmd->network, $target,
-    "$asker: $response[0]");
+  $cmd->reply("$response[0]");
 
   return MODULE_EAT_ALL;
 }

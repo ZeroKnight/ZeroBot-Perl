@@ -36,8 +36,6 @@ sub Bot_commanded
 {
   my ($self, $core) = splice @_, 0, 2;
   my $cmd = ${ $_[0] };
-  my $bot_nick = $cmd->network->irc->nick_name;
-  my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
   $cmd->parse(
     encode => {
       'l|list'      => OPTVAL_NONE,
@@ -51,8 +49,7 @@ sub Bot_commanded
   {
     if (exists $cmd->opts->{list})
     {
-      module_send_event(irc_msg_send => $cmd->network, $target,
-        "I support the following algorithms: @algorithm_list");
+      $cmd->reply("I support the following algorithms: @algorithm_list");
       return MODULE_EAT_ALL;
     }
 
@@ -72,15 +69,14 @@ sub Bot_commanded
     {
       $case = sub { return $_[0] };
     }
-    encode($cmd->network, $target, $case, @{$cmd->args});
+    $cmd->reply('Result: ', encode($case, @{$cmd->args}));
   }
   return MODULE_EAT_NONE;
 }
 
 sub encode
 {
-  my ($network, $target, $case, $algorithm, @input) = @_;
-
+  my ($case, $algorithm, @input) = @_;
   my $digest = join ' ', @input;
   foreach ($algorithm)
   {
@@ -93,9 +89,7 @@ sub encode
     $digest = encode_base64($digest)    when 'base64';
     default { return 0 }
   }
-  $digest = $case->($digest);
-  module_send_event(irc_msg_send => $network, $target, "Result: $digest");
-  return 1;
+  return $case->($digest);
 }
 
 1;

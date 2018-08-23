@@ -12,7 +12,7 @@ our $Author  = 'ZeroKnight';
 our $Description = 'Simple Russian Roulette game with a 6-shooter';
 
 my $cfg;
-my %reply;
+my %origin;
 my $gamedata;
 
 sub Module_register
@@ -26,7 +26,7 @@ sub Module_register
   $cfg = Config->modules->{Roulette};
 
   $gamedata = {};
-  %reply    = ();
+  %origin   = ();
 
   return MODULE_EAT_NONE;
 }
@@ -46,17 +46,16 @@ sub Bot_commanded
   # Playing by oneself is just suicide.
   return unless is_valid_chan_name_lax($cmd->dest);
 
-  %reply = (
+  %origin = (
     network => $cmd->network,
     dest    => $cmd->dest,
-    nick    => $cmd->src_nick,
   );
 
   my $scapegoat;
-  my $victim = $cmd->src_nick;
+  my $victim = $cmd->src->nick;
 
   # Load the gun if this is the first game in the channel
-  my ($network, $channel) = ($reply{network}->name, $reply{dest});
+  my ($network, $channel) = ($origin{network}->name, $origin{dest});
   reload(silent => 1) unless exists $gamedata->{$network}{$channel};
   my $game = $gamedata->{$network}{$channel};
 
@@ -65,7 +64,7 @@ sub Bot_commanded
 
   if ($game->{bullet}-- > 0)
   {
-    respond("CLICK! Who's next?");
+    $cmd->respond("CLICK! Who's next?");
     return MODULE_EAT_ALL;
   }
   else
@@ -78,20 +77,20 @@ sub Bot_commanded
         $cmd->network->irc->channel_list($cmd->dest);
       $scapegoat = $nicklist[rand @nicklist];
     }
-    bang($victim, $scapegoat);
+    bang($cmd, $victim, $scapegoat);
   }
   return MODULE_EAT_ALL;
 }
 
 sub bang
 {
-  my ($victim, $scapegoat) = @_;
-  my $irc = $reply{network}->irc;
-  my $bot_nick = $reply{network}->nick;
+  my ($cmd, $victim, $scapegoat) = @_;
+  my $irc = $origin{network}->irc;
+  my $bot_nick = $origin{network}->nick;
 
   if (defined $scapegoat)
   {
-    respond("$victim pulls the trigger, but the bullet somehow misses and hits $scapegoat instead!");
+    $cmd->respond("$victim pulls the trigger, but the bullet somehow misses and hits $scapegoat instead!");
     $victim = $scapegoat;
   }
 
@@ -99,33 +98,33 @@ sub bang
   {
     if ($victim eq $bot_nick)
     {
-      $irc->yield(kick => $reply{dest}, $bot_nick,
+      $irc->yield(kick => $origin{dest}, $bot_nick,
         'BANG! Shoots themself in the head.');
 
-      my $channel = first { $_->[0] eq $reply{dest} }
-        @{$reply{network}->channels};
+      my $channel = first { $_->[0] eq $origin{dest} }
+        @{$origin{network}->channels};
       my ($name, $key) = @$channel;
-      $reply{network}->irc->delay([join => $name, $key ? $key : ()], 3);
+      $origin{network}->irc->delay([join => $name, $key ? $key : ()], 3);
 
-      module_delay_event([irc_action_send => $reply{network},
-        $reply{dest}, 'has been resurrected by forces unknown'], 3);
+      module_delay_event([irc_action_send => $origin{network},
+        $origin{dest}, 'has been resurrected by forces unknown'], 3);
       reload(delay => 4);
       return;
     }
     else
     {
-      $irc->yield(kick => $reply{dest}, $victim, 'BANG! You died.');
+      $irc->yield(kick => $origin{dest}, $victim, 'BANG! You died.');
     }
   }
   else
   {
     if ($victim eq $bot_nick)
     {
-      emote('takes a bullet to the brain, but is subsequently resurrected by forces unknown');
+      $cmd->emote('takes a bullet to the brain, but is subsequently resurrected by forces unknown');
     }
     else
     {
-      respond("BANG! $victim died.");
+      $cmd->respond("BANG! $victim died.");
     }
   }
   reload();
@@ -133,21 +132,21 @@ sub bang
 
 sub should_kick
 {
-  return $cfg->{KickOnDeath} && $reply{network}->is_chanop($reply{dest})
+  return $cfg->{KickOnDeath} && $origin{network}->is_chanop($origin{dest})
     ? 1 : 0;
 }
 
 sub reload
 {
   my %opts = @_;
-  my ($network, $channel) = ($reply{network}->name, $reply{dest});
+  my ($network, $channel) = ($origin{network}->name, $origin{dest});
 
   # Chamber a round and spin the cylinder
   $gamedata->{$network}{$channel}{bullet} = int(rand(6));
 
   if (!$opts{silent})
   {
-    my @payload = (irc_action_send => $reply{network}, $reply{dest},
+    my @payload = (irc_action_send => $origin{network}, $origin{dest},
       'chambers a new round and spins the cylinder');
     if (exists $opts{delay})
     {
@@ -158,16 +157,6 @@ sub reload
       module_send_event(@payload);
     }
   }
-}
-
-sub respond
-{
-  module_send_event(irc_msg_send => $reply{network}, $reply{dest}, @_);
-}
-
-sub emote
-{
-  module_send_event(irc_action_send => $reply{network}, $reply{dest}, @_);
 }
 
 1;

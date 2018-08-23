@@ -29,9 +29,6 @@ sub Bot_commanded
 {
   my ($self, $core) = splice @_, 0, 2;
   my $cmd = ${ $_[0] };
-  my $bot_nick = $cmd->network->irc->nick_name;
-  my $target = $cmd->dest eq $bot_nick ? $cmd->src_nick : $cmd->dest;
-
   $cmd->parse(
     module   => {},
     protocol => {},
@@ -75,19 +72,16 @@ sub Bot_commanded
       {
         if ($m->bad_module)
         {
-          module_send_event(irc_msg_send => $cmd->network, $target,
-            "'$arg' doesn't appear to be a feature module");
+          $cmd->reply("'$arg' doesn't appear to be a feature module");
         }
         else
         {
-          module_send_event(irc_msg_send => $cmd->network, $target,
-            "Failed to load '$arg'");
+          $cmd->reply("Failed to load '$arg'");
         }
       }
     }
     local $" = ', ';
-    module_send_event(irc_msg_send => $cmd->network, $target,
-      "Successfully loaded: @success") if @success;
+    $cmd->reply("Successfully loaded: @success") if @success;
   }
   elsif ($subcmd->name eq 'unload')
   {
@@ -102,13 +96,11 @@ sub Bot_commanded
       }
       elsif ($r == -1)
       {
-        module_send_event(irc_msg_send => $cmd->network, $target,
-          "'$arg' is not loaded");
+        $cmd->reply("'$arg' is not loaded");
       }
     }
     local $" = ', ';
-    module_send_event(irc_msg_send => $cmd->network, $target,
-      "Unloaded: @unloaded") if @unloaded;
+    $cmd->reply("Unloaded: @unloaded") if @unloaded;
   }
   elsif ($subcmd->name eq 'reload')
   {
@@ -123,13 +115,11 @@ sub Bot_commanded
       }
       else
       {
-        module_send_event(irc_msg_send => $cmd->network, $target,
-          "Failed to reload '$arg'");
+        $cmd->reply("Failed to reload '$arg'");
       }
     }
     local $" = ', ';
-    module_send_event(irc_msg_send => $cmd->network, $target,
-      "Successfully reloaded: @success") if @success;
+    $cmd->reply("Successfully reloaded: @success") if @success;
   }
   elsif ($subcmd->name eq 'list')
   {
@@ -146,7 +136,7 @@ sub Bot_commanded
       my @loaded = sort(module_list_loaded());
       $msg = "Loaded modules: @loaded";
     }
-    module_send_event(irc_msg_send => $cmd->network, $target, $msg);
+    $cmd->reply($msg);
   }
   elsif ($subcmd->name eq 'is')
   {
@@ -154,14 +144,12 @@ sub Bot_commanded
     if (exists $subcmd->opts->{available})
     {
       my $r = module_is_available($module, $subcmd->opts->{dir});
-      module_send_event(irc_msg_send => $cmd->network, $target,
-        $r ? "Yep, it's available." : "I can't find that module...");
+      $cmd->reply($r ? "Yep, it's available." : "I can't find that module...");
     }
     elsif (exists $subcmd->opts->{loaded})
     {
       my $r = module_is_loaded($module);
-      module_send_event(irc_msg_send => $cmd->network, $target,
-        $r ? "Yep, it's currently loaded." : "Nope, that module isn't loaded.");
+      $cmd->reply($r ? "Yep, it's currently loaded." : "Nope, that module isn't loaded.");
     }
   }
   return MODULE_EAT_ALL;
