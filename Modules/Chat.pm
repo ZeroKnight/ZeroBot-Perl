@@ -54,7 +54,6 @@ sub Bot_commanded
 {
   my ($self, $core) = splice @_, 0, 2;
   my $cmd = ${ $_[0] };
-  my $bot_nick = $cmd->network->irc->nick_name;
   $cmd->parse(
     say => {
       'h|help' => OPTVAL_NONE,
@@ -88,7 +87,6 @@ sub Bot_commanded
   }
   elsif ($cmd->name eq 'fortune')
   {
-    my $target = $cmd->dest eq $bot_nick ? $cmd->src->nick : $cmd->dest;
     # if ($has_fortune)
     if (0)
     {
@@ -142,7 +140,6 @@ sub Bot_irc_msg_public
 {
   my ($self, $core) = splice @_, 0, 2;
   my $msg = ${ $_[0] };
-  my $bot_nick = $msg->network->irc->nick_name;
 
   # Berate: Spew hatred at configured users whenever they speak
   my @berate_nicks = Config->get_as_list($cfg->{Berate}{nicks});
