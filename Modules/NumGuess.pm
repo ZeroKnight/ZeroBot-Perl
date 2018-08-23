@@ -10,7 +10,6 @@ our $Author      = 'ZeroKnight';
 our $Description = 'Simple number guessing game';
 
 my $cfg;
-my %reply;
 my $guess_range;
 my $gamedata;
 
@@ -26,7 +25,6 @@ sub Module_register
   $guess_range = $cfg->{range} // 100;
 
   $gamedata = {};
-  %reply    = ();
 
   return MODULE_EAT_NONE;
 }
@@ -43,25 +41,21 @@ sub Bot_commanded
   $cmd->parse('guess' => {});
   return MODULE_EAT_NONE unless $cmd->valid and $cmd->name eq 'guess';
 
-  %reply = (
-    network => $cmd->network,
-    dest    => $cmd->dest,
-    nick    => $cmd->src_nick,
-  );
+  my $player = $cmd->src->nick;
 
   # TODO: Randomize these phrases?
   if ($cmd->argc > 1)
   {
-    reply('One at a time, please.');
+    $cmd->reply('One at a time, please.');
     return MODULE_EAT_ALL;
   }
   elsif ($cmd->argc < 1 or $cmd->args->[0] !~ /^\d+$/)
   {
-    reply('Try a number...');
+    $cmd->reply('Try a number...');
     return MODULE_EAT_ALL;
   }
 
-  my ($network, $channel) = ($reply{network}->name, $reply{dest});
+  my ($network, $channel) = ($cmd->network->name, $cmd->dest);
   unless (exists $gamedata->{$network}{$channel})
   {
     $gamedata->{$network}{$channel} = {
@@ -74,18 +68,18 @@ sub Bot_commanded
   $game->{num_guesses}++;
   if ($cmd->args->[0] == $game->{magic_num})
   {
-    respond("DING! $reply{nick} wins! It took a total of ",
+    $cmd->respond("DING! $player wins! It took a total of ",
       $game->{num_guesses}, ' guesses.');
-    emote('thinks of another number');
+    $cmd->emote('thinks of another number');
     reset_game($game);
   }
   elsif ($cmd->args->[0] > $game->{magic_num})
   {
-    reply('Too high!');
+    $cmd->reply('Too high!');
   }
   elsif ($cmd->args->[0] < $game->{magic_num})
   {
-    reply('Too low!');
+    $cmd->reply('Too low!');
   }
   return MODULE_EAT_ALL;
 }
@@ -98,21 +92,5 @@ sub reset_game
 }
 
 sub think_of_number { int(rand($cfg->{range}) + 1) }
-
-sub respond
-{
-  module_send_event(irc_msg_send => $reply{network}, $reply{dest}, @_);
-}
-
-sub reply
-{
-  module_send_event(irc_msg_send => $reply{network}, $reply{dest},
-    "$reply{nick}: ", @_);
-}
-
-sub emote
-{
-  module_send_event(irc_action_send => $reply{network}, $reply{dest}, @_);
-}
 
 1;

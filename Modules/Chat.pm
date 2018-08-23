@@ -71,10 +71,16 @@ sub Bot_commanded
 
   if ($cmd->name =~ /^(say|do)$/n)
   {
-    my $target = $cmd->opts->{to} //
-      ($cmd->dest eq $bot_nick ? $cmd->src->nick : $cmd->dest);
-    my $type = $cmd->name eq 'say' ? 'msg' : 'action';
-    respond($type, $cmd->network, $target, $cmd->args_str);
+    if ($cmd->opts->{to})
+    {
+      my $type = $cmd->name eq 'say' ? 'msg' : 'action';
+      react_with($type, $cmd->network, $cmd->opts->{to}, $cmd->args_str);
+    }
+    else
+    {
+      my $method = $cmd->name eq 'say' ? 'respond' : 'emote';
+      $cmd->$method($cmd->args_str);
+    }
   }
   elsif ($cmd->name eq 'raw')
   {
@@ -83,18 +89,19 @@ sub Bot_commanded
   elsif ($cmd->name eq 'fortune')
   {
     my $target = $cmd->dest eq $bot_nick ? $cmd->src->nick : $cmd->dest;
-    if ($has_fortune)
+    # if ($has_fortune)
+    if (0)
     {
       my @fortune;
       while (!@fortune or @fortune > 5)
       {
         @fortune = `fortune`;
       }
-      respond(msg => $cmd->network, $target, $_) for @fortune;
+      $cmd->respond($_) for @fortune;
     }
     else
     {
-      respond(msg => $cmd->network, $target, '`fortune` is not available :(');
+      $cmd->reply('`fortune` is not available :(');
     }
   }
   return MODULE_EAT_ALL;
@@ -115,7 +122,7 @@ sub Bot_irc_joined
         SELECT * FROM chat_greetings
         ORDER BY RANDOM() LIMIT 1;
       });
-      respond($ary[1] ? 'action' : 'msg', $network, $channel, $ary[0]);
+      react_with($ary[1] ? 'action' : 'msg', $network, $channel, $ary[0]);
     }
     delete $kicked_from{$channel};
   }
@@ -137,12 +144,6 @@ sub Bot_irc_msg_public
   my $msg = ${ $_[0] };
   my $bot_nick = $msg->network->irc->nick_name;
 
-  # If handling a private message, set $target to the sender, otherwise set it
-  # to where the message was sent from
-  # TODO: Create a utility function for determining target like this, or better
-  # yet, bake it into IRC::Message
-  my $target = $msg->dest eq $bot_nick ? $msg->src->nick : $msg->dest;
-
   # Berate: Spew hatred at configured users whenever they speak
   my @berate_nicks = Config->get_as_list($cfg->{Berate}{nicks});
   if ($cfg->{Berate}{enabled} and any {$msg->src->nick =~ /$_/} @berate_nicks)
@@ -153,7 +154,8 @@ sub Bot_irc_msg_public
         SELECT * FROM chat_berate
         ORDER BY RANDOM() LIMIT 1
       });
-      respond($ary[1] ? 'action' : 'msg', $msg->network, $target, $ary[0]);
+      my $method = $ary[1] ? 'emote' : 'respond';
+      $msg->$method($ary[0]);
       return MODULE_EAT_NONE;
     }
   }
@@ -161,8 +163,7 @@ sub Bot_irc_msg_public
   # wat
   if ($msg->message =~ /w+h?[aou]+t\s*$/i)
   {
-    my $reply = qw(wat wut wot what whut)[rand(4)];
-    module_send_event(irc_msg_send => $msg->network, $target, $reply);
+    $msg->respond(qw(wat wut wot what whut)[rand(5)]);
     return MODULE_EAT_NONE;
   }
 
@@ -172,20 +173,20 @@ sub Bot_irc_msg_public
   {
     # Do not use '.' as a possible output
     my $char = int(rand(@dotchars - 1)) + 1;
-    my $reply = $msg->message . $dotchars[$char];
-    module_send_event(irc_msg_send => $msg->network, $target, $reply);
+    $msg->respond($msg->message . $dotchars[$char]);
     return MODULE_EAT_NONE;
   }
 
   # Respond to being mentioned...strangely
   # NOTE: Needs to be LOW priority
-  if ($msg->mentioned)
+  if ($msg->mentioned())
   {
     my @ary = $dbh->selectrow_array(q{
       SELECT * FROM chat_mentioned
       ORDER BY RANDOM() LIMIT 1;
     });
-    respond($ary[1] ? 'action' : 'msg', $msg->network, $target, $ary[0]);
+    my $method = $ary[1] ? 'emote' : 'respond';
+    $msg->$method($ary[0]);
     return MODULE_EAT_NONE;
   }
 
@@ -196,7 +197,7 @@ sub Bot_irc_msg_public
 sub Bot_irc_msg_private { Bot_irc_msg_public(@_) }
 sub Bot_irc_action      { Bot_irc_msg_public(@_) }
 
-sub respond
+sub react_with
 {
   my ($type, $network, $target, $str) = @_;
   croak "Argument \$type must be either 'msg' or 'action', given: $type"
