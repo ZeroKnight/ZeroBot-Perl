@@ -161,7 +161,7 @@ sub Bot_irc_msg_public
   }
 
   # wat
-  if ($msg->message =~ /w+h?[aou]+t\s*$/i)
+  if ($msg->message =~ /w+h?[aou]+t\s*\??\s*$/i)
   {
     $msg->respond(qw(wat wut wot what whut)[rand(5)]);
     return MODULE_EAT_NONE;
