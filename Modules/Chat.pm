@@ -28,8 +28,7 @@ sub Module_register
 
   module_register($self, 'SERVER', qw(
     commanded
-    irc_msg_public
-    irc_msg_private
+    irc_msg
     irc_action
     irc_joined
     irc_kicked
@@ -135,7 +134,8 @@ sub Bot_irc_kicked
   $kicked_from{$channel} = 1 if $nick eq $network->irc->nick_name;
 }
 
-sub Bot_irc_msg_public
+sub Bot_irc_action { Bot_irc_msg_public(@_) }
+sub Bot_irc_msg
 {
   my ($self, $core) = splice @_, 0, 2;
   my $msg = ${ $_[0] };
@@ -188,10 +188,6 @@ sub Bot_irc_msg_public
 
   return MODULE_EAT_NONE;
 }
-
-# These are handled in mostly the same way
-sub Bot_irc_msg_private { Bot_irc_msg_public(@_) }
-sub Bot_irc_action      { Bot_irc_msg_public(@_) }
 
 sub react_with
 {

@@ -11,4 +11,10 @@ extends 'ZeroBot::Command';
 
 has '+src' => (isa => InstanceOf['ZeroBot::IRC::User']);
 
+has private => (
+  is      => 'ro',
+  isa     => Bool,
+  default => 0,
+);
+
 1;

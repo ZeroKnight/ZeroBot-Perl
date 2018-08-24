@@ -4,10 +4,10 @@ use ZeroBot::Common -types;
 
 my %constants;
 BEGIN { %constants = (
-  MSGTYPE_PUBLIC  => 1,
-  MSGTYPE_PRIVATE => 2,
-  MSGTYPE_NOTICE  => 3,
-  MSGTYPE_ACTION  => 4
+  MSGTYPE_MESSAGE => 1,
+  MSGTYPE_NOTICE  => 2,
+  MSGTYPE_ACTION  => 3,
+  MSGTYPE_MAX     => 3
 )};
 use constant \%constants;
 
@@ -25,13 +25,19 @@ with map("ZeroBot::IRC::$_", qw/Event Answerable/);
 has '+src' => (isa => InstanceOf['ZeroBot::IRC::User']);
 
 has type => (
-  is      => 'rw',
+  is      => 'ro',
   isa     => Int,
-  default => MSGTYPE_PUBLIC,
+  default => MSGTYPE_MESSAGE,
+);
+
+has private => (
+  is      => 'ro',
+  isa     => Bool,
+  default => 0,
 );
 
 has message => (
-  is       => 'rw',
+  is       => 'ro',
   isa      => Str,
   required => 1,
 );

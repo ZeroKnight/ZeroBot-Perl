@@ -174,8 +174,8 @@ sub _create_network_session
     # Inlining these prevents requiring 4 nearly-identical subs or a bunch of
     # wrapper subs feeding irc_spoke
     inline_states => {
-      irc_public      => sub { $self->irc_spoke(MSGTYPE_PUBLIC,  @_) },
-      irc_msg         => sub { $self->irc_spoke(MSGTYPE_PRIVATE, @_) },
+      irc_public      => sub { $self->irc_spoke(MSGTYPE_MESSAGE, @_) },
+      irc_msg         => sub { $self->irc_spoke(MSGTYPE_MESSAGE, @_) },
       irc_notice      => sub { $self->irc_spoke(MSGTYPE_NOTICE,  @_) },
       irc_ctcp_action => sub { $self->irc_spoke(MSGTYPE_ACTION,  @_) },
     },
@@ -388,34 +388,49 @@ sub irc_spoke
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $cmdchar = ZBCore->cmdchar;
 
-  my %event = (
-    network => $network,
-    src => ZeroBot::IRC::User->new($src),
-    dests => $dests
-  );
-
-  # Determine whether this is a plain message, or a command
-  if ($msgtype < MSGTYPE_NOTICE and substr($body, 0, 1) eq $cmdchar)
+  # NOTE: It's not clear in what circumstances PoCo::IRC will supply more than
+  # one destination for these events. Receiving PRIVMSGs with multiple
+  # recipients merely fires the irc_(msg|public) event twice. As far as I'm
+  # aware, $dests will virtually always have only one element.
+  foreach my $dest (@$dests)
   {
-    my $cmd = ZeroBot::IRC::Command->new(%event, line => $body);
-    module_send_event(commanded => $cmd);
-  }
-  else
-  {
-    my $msg = ZeroBot::IRC::Message->new(
-      %event,
-      type    => $msgtype,
-      message => $body,
+    my %event = (
+      network => $network,
+      src     => ZeroBot::IRC::User->new($src),
+      dest    => $dest
     );
+    my $ispriv = $dest eq $network->nick ? 1 : 0;
 
-    use feature 'switch';
-    no warnings 'experimental::smartmatch';
-    for ($msgtype)
+    # TBD: Should we decode here, or let modules handle it when they need it?
+    $body = decode_irc($body);
+
+    # Determine whether this is a plain message, or a command
+    if ($msgtype == MSGTYPE_MESSAGE and substr($body, 0, 1) eq $cmdchar)
     {
-      module_send_event(irc_msg_public  => $msg) when MSGTYPE_PUBLIC;
-      module_send_event(irc_msg_private => $msg) when MSGTYPE_PRIVATE;
-      module_send_event(irc_notice      => $msg) when MSGTYPE_NOTICE;
-      module_send_event(irc_action      => $msg) when MSGTYPE_ACTION;
+      my $cmd = ZeroBot::IRC::Command->new(
+        %event,
+        line    => $body,
+        private => $ispriv,
+      );
+      module_send_event(commanded => $cmd);
+    }
+    else
+    {
+      my $msg = ZeroBot::IRC::Message->new(
+        %event,
+        type    => $msgtype,
+        private => $ispriv,
+        message => $body,
+      );
+
+      use feature 'switch';
+      no warnings 'experimental::smartmatch';
+      for ($msgtype)
+      {
+        module_send_event(irc_msg    => $msg) when MSGTYPE_MESSAGE;
+        module_send_event(irc_notice => $msg) when MSGTYPE_NOTICE;
+        module_send_event(irc_action => $msg) when MSGTYPE_ACTION;
+      }
     }
   }
 }
