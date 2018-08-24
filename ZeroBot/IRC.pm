@@ -470,7 +470,7 @@ sub irc_erroneous_nickname
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $rpl = ZeroBot::IRC::Reply->new($network, 432, @_[ARG0..ARG2]);
-  my $badnick = $rpl->parsed->[0];
+  my $badnick = $rpl->msg->[0];
   my $netname = $network->name;
 
   Log->error("[$netname] Erroneous Nickname: $badnick");
@@ -506,7 +506,7 @@ sub irc_nickname_in_use
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $rpl = ZeroBot::IRC::Reply->new($network, 433, @_[ARG0..ARG2]);
-  my $nick = $rpl->parsed->[0];
+  my $nick = $rpl->msg->[0];
   my $netname = $network->name;
 
   Log->error("[$netname] Nick '$nick' already in use.");
