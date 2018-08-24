@@ -134,7 +134,7 @@ sub Bot_irc_kicked
   $kicked_from{$channel} = 1 if $nick eq $network->irc->nick_name;
 }
 
-sub Bot_irc_action { Bot_irc_msg_public(@_) }
+sub Bot_irc_action { Bot_irc_msg(@_) }
 sub Bot_irc_msg
 {
   my ($self, $core) = splice @_, 0, 2;
