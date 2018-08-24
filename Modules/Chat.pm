@@ -87,8 +87,7 @@ sub Bot_commanded
   }
   elsif ($cmd->name eq 'fortune')
   {
-    # if ($has_fortune)
-    if (0)
+    if ($has_fortune)
     {
       my @fortune;
       while (!@fortune or @fortune > 5)
