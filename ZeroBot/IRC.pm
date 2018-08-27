@@ -21,6 +21,7 @@ use POE qw(
   Component::IRC::Plugin::Connector
 );
 
+use Carp;
 use Moo;
 
 has networks => (
@@ -216,9 +217,10 @@ sub Bot_irc_connect_network
     # UseSSL, SSLCert, SSLKey, SSLCtx ...
     useipv6    => $network_obj->servers->[0]->ipv6 // 0,
     Flood      => 1, # PoCo::IRC's anti-flood is overly cautious
-    # We implement message splitting, so override PoCo IRC's default of 450.
-    # NOTE: PoCo IRC will still subtract nick length from this, however.
-    msg_length => 512,
+    # PoCo::IRC will unavoidably truncate all messages greater than msg_length
+    # minus nick length. Since we implement message splitting logic, set this to
+    # a huge value to work around this.
+    msg_length => 65536,
   );
   $spawn_opts{LocalAddr} = Config->core->{BindAddr}
     if defined Config->core->{BindAddr};
@@ -271,15 +273,66 @@ sub _stop
   ...
 }
 
+# TODO: Tags, special handling of certian messages (e.g. ISON, JOIN, etc.)
+sub split_messsage
+{
+  my ($network, $msgtype, $dest, $msg) = @_;
+  my $type;
+  if ($msgtype < 1 or $msgtype > MSGTYPE_MAX)
+  {
+    carp "split_messsage: Invalid message type: $msgtype";
+    return undef;
+  }
+  else
+  {
+    $type = $msgtype == MSGTYPE_NOTICE ? 'NOTICE' : 'PRIVMSG';
+  }
+
+  # TBD: Use server's NICKLEN instead of current nick length (like WeeChat)?
+  # TODO: Support servers that allow lines >512 bytes
+  my ($nick, $user, $host) = map($network->$_, qw/nick user host/);
+  my $remaining = 510 - length(":$nick!$user\@$host $type $dest :");
+  if ($msgtype == MSGTYPE_ACTION)
+  {
+    $remaining -= 9; # \01ACTION <msg>\01
+  }
+
+  # For normal messages, we make sure to split at a word boundary rather than
+  # the last possible character, as it could be in the middle of a word,
+  # creating an unnatural wrap that's harder to read.
+  my @split_msg;
+  if (length $msg > $remaining)
+  {
+    while (length $msg > $remaining)
+    {
+      # Find the last '-' or ' ' to split at, whichever is closest
+      my $chunk = reverse substr($msg, 0, $remaining, '');
+      my ($idx_s, $idx_h) = (index($chunk, ' '), index($chunk, '-'));
+      my $wrap = ($idx_h > -1 and $idx_h < $idx_s) ? $idx_h : $idx_s;
+
+      # Break at the wrap point and flip the chunk back the right way around
+      my $leftover = $chunk;
+      $chunk = scalar reverse substr($leftover, $wrap, length($leftover), '');
+      chop $chunk if substr($chunk, -1) eq ' ';
+      push @split_msg, $chunk;
+      $msg = reverse($leftover) . $msg;
+    }
+  }
+  push @split_msg, $msg;
+  return @split_msg;
+}
+
 sub Bot_irc_msg_send
 {
   my ($self, $core) = splice @_, 0, 2;
   my $network = ${$_[0]};
   my $dest    = ${$_[1]};
-  my @msg     = map($$_, @_[2..($#_-1)]);
+  my $msg     = join('', map($$_, @_[2..($#_-1)]));
 
-  local $" = '';
-  $network->irc->yield(privmsg => $dest, encode_utf8("@msg"));
+  foreach my $chunk (split_messsage($network, MSGTYPE_MESSAGE, $dest, $msg))
+  {
+    $network->irc->yield(privmsg => $dest, encode_utf8($chunk));
+  }
   return MODULE_EAT_NONE;
 }
 
@@ -288,9 +341,12 @@ sub Bot_irc_action_send
   my ($self, $core) = splice @_, 0, 2;
   my $network = ${$_[0]};
   my $dest    = ${$_[1]};
-  my $action  = encode_utf8(${$_[2]});
+  my $action  = join('', map($$_, @_[2..($#_-1)]));
 
-  $network->irc->yield(ctcp => $dest, "ACTION $action");
+  foreach my $chunk (split_messsage($network, MSGTYPE_ACTION, $dest, $action))
+  {
+    $network->irc->yield(ctcp => $dest, encode_utf8("ACTION $chunk"));
+  }
   return MODULE_EAT_NONE;
 }
 
