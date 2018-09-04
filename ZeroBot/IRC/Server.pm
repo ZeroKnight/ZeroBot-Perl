@@ -6,30 +6,39 @@ use Moo;
 use Types::Standard qw(Int Str Bool);
 
 has hostname => (
-  is       => 'rw',
+  is       => 'rwp',
   isa      => Str,
   required => 1,
 );
 
+# A server can report whatever name it wants, and it may not be the same as its
+# hostname. This member represents whatever name the server claims.
+has servername => (
+  is       => 'rwp',
+  isa      => Str,
+  init_arg => undef,
+  default  => sub { $_[0]->hostname },
+);
+
 has port => (
-  is      => 'rw',
+  is      => 'rwp',
   isa     => Int,
   default => 6667,
 );
 
 has password => (
-  is  => 'rw',
+  is  => 'rwp',
   isa => Str,
 );
 
 has ssl => (
-  is  => 'rw',
+  is  => 'rwp',
   isa => Bool,
   default => 0,
 );
 
 has ipv6 => (
-  is  => 'rw',
+  is  => 'rwp',
   isa => Bool,
   default => 0,
 );

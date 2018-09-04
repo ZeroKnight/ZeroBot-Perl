@@ -158,6 +158,7 @@ sub _create_network_session
         irc_error
         irc_connected
         irc_disconnected
+        irc_snotice
 
         irc_join
         irc_kick
@@ -359,6 +360,7 @@ sub irc_connected
   my $netname = $network->name;
 
   Log->info("[$netname] Established connection to $server, now registering...");
+  $network->_set_connected_server($network->get_server($server));
 }
 
 sub irc_disconnected
@@ -371,6 +373,27 @@ sub irc_disconnected
 
   $network->_set_connected(0);
   module_send_event(disconnected => $network, $server);
+}
+
+sub irc_snotice
+{
+  my ($self, $heap, $msg, $target, $sender) = @_[OBJECT, HEAP, ARG0 .. ARG2];
+  my ($network, $irc) = @{$heap}{'network', 'irc'};
+  my $netname = $network->name;
+
+  # Handle server name mismatches. Typically caused by misconfigured servers.
+  # TODO: Handle rare edge case of server name change after server rehash
+  if ($msg =~ /Looking up your hostname/)
+  {
+    my $cs = $network->connected_server;
+    if ($sender ne $cs->servername)
+    {
+      Log->verbose("[$netname] Server at ", $cs->hostname, " calls itself $sender");
+      $cs->_set_servername($sender);
+    }
+  }
+
+  Log->info("[$netname] $sender: $msg");
 }
 
 sub irc_welcome
@@ -549,7 +572,7 @@ sub irc_erroneous_nickname
     # bot event and we can just ignore it and move on.
     if (!$network->connected)
     {
-      Log->error("[$netname] Cannot register connection with erroneous nickname); disconnecting.");
+      Log->error("[$netname] Cannot register connection with erroneous nickname; disconnecting.");
       $irc->disconnect;
     }
   }

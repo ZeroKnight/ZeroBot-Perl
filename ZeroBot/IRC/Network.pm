@@ -121,6 +121,12 @@ has connected_at => (
   init_arg => undef,
 );
 
+has connected_server => (
+  is       => 'rwp',
+  isa      => InstanceOf['ZeroBot::IRC::Server'],
+  init_arg => undef,
+);
+
 sub get_next_alt
 {
   my ($self, $reset) = @_;
@@ -141,6 +147,16 @@ sub is_chanop
 {
   my ($self, $channel) = @_;
   return $self->irc->is_channel_operator($channel, $self->nick);
+}
+
+sub get_server
+{
+  my ($self, $name) = @_;
+  foreach my $server (@{$self->servers})
+  {
+    return $server if $server->servername eq $name;
+  }
+  return undef;
 }
 
 1;
