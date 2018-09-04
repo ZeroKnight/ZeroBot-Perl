@@ -1,6 +1,10 @@
-package ZeroBot::IRC::Message;
+package ZeroBot::IRC::Event::Message;
 
 use ZeroBot::Common -types;
+
+use Carp;
+
+use IRC::Utils qw(lc_irc strip_color strip_formatting);
 
 my %constants;
 BEGIN { %constants = (
@@ -11,18 +15,12 @@ BEGIN { %constants = (
 )};
 use constant \%constants;
 
-use parent 'Exporter::Tiny';
-our @EXPORT = (qw(), keys %constants);
+our @EXPORT = (keys %constants);
 our @EXPORT_OK = qw();
 
-use Carp;
-
-use IRC::Utils qw(lc_irc strip_color strip_formatting);
-
 use Moo;
-with map("ZeroBot::IRC::$_", qw/Event Answerable/);
-
-has '+src' => (isa => InstanceOf['ZeroBot::IRC::User']);
+extends 'Exporter::Tiny';
+with 'ZeroBot::IRC::Event';
 
 has type => (
   is      => 'ro',
@@ -31,9 +29,11 @@ has type => (
 );
 
 has private => (
-  is      => 'ro',
-  isa     => Bool,
-  default => 0,
+  is       => 'ro',
+  isa      => Bool,
+  lazy     => 1,
+  init_arg => undef,
+  builder  => sub { $_[0]->_ispriv() },
 );
 
 has message => (
@@ -74,5 +74,19 @@ sub normalize
   my $self = shift;
   return strip_formatting(strip_color($self->message));
 }
+
+around 'reply' => sub
+{
+  my ($orig, $self, @args) = @_;
+  my $sender = $self->src->nick;
+
+  # If the message is private, there's no need to mention the sender,
+  # essentially making this a respond().
+  unless ($self->_ispriv())
+  {
+    unshift @args, "$sender: ";
+  }
+  $orig->($self, @args);
+};
 
 1;

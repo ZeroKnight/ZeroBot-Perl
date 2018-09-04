@@ -10,9 +10,12 @@ use ZeroBot::Module::Loader -load;
 use ZeroBot::IRC::Network;
 use ZeroBot::IRC::Server;
 use ZeroBot::IRC::User;
-use ZeroBot::IRC::Reply;
-use ZeroBot::IRC::Message;
-use ZeroBot::IRC::Command;
+use ZeroBot::IRC::ServerReply;
+use ZeroBot::IRC::Event::Message;
+use ZeroBot::IRC::Event::Command;
+use ZeroBot::IRC::Event::Join;
+use ZeroBot::IRC::Event::Kick;
+use ZeroBot::IRC::Event::Nick;
 
 use Encode qw(encode_utf8);
 use IRC::Utils ':ALL';
@@ -433,31 +436,44 @@ sub irc_welcome
 
 sub irc_join
 {
-  my ($self, $heap, $who, $channel) = @_[OBJECT, HEAP, ARG0, ARG1];
-  my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $nick = parse_user($who);
-
-  module_send_event(irc_joined => $network, $channel, $nick, $who);
+  my ($self, $heap) = @_[OBJECT, HEAP];
+  my $join = ZeroBot::IRC::Event::Join->new(
+    network => $heap->{network},
+    src     => ZeroBot::IRC::User->new($_[ARG0]),
+    dest    => $_[ARG1],
+  );
+  module_send_event(irc_joined => $join);
 }
 
 sub irc_kick
 {
-  my ($self, $heap, $who, $channel) = @_[OBJECT, HEAP, ARG0, ARG1];
-  my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $nick = parse_user($who);
-
-  module_send_event(irc_kicked => $network, $channel, $nick, $who);
+  my ($self, $heap) = @_[OBJECT, HEAP];
+  my $kick = ZeroBot::IRC::Event::Kick->new(
+    network => $heap->{network},
+    src     => ZeroBot::IRC::User->new($_[ARG0]),
+    dest    => $_[ARG1],
+    reason  => $_[ARG3],
+    kicked  => $_[ARG4],
+  );
+  module_send_event(irc_kicked => $kick)
 }
 
 sub irc_nick
 {
-  my ($self, $heap, $who, $newnick, $common) = @_[OBJECT, HEAP, ARG0 .. ARG2];
+  my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
+  my $change = ZeroBot::IRC::Event::Nick->new(
+    network => $network,
+    src     => ZeroBot::IRC::User->new($_[ARG0]),
+    dests   => $_[ARG2],
+    newnick => $_[ARG1],
+  );
 
-  $network->_set_nick($newnick) if parse_user($who) eq $irc->nick_name; # XXX: temp
+  # The server can potentially change the bot's nick
+  $network->_set_nick($change->newnick)
+    if $change->src->nick eq $irc->nick_name;
 
-  # TODO: send nick event to modules
-  # module_send_event(nick_change => data...);
+  module_send_event(nick_change => $change);
 }
 
 sub irc_spoke
@@ -478,7 +494,6 @@ sub irc_spoke
       src     => ZeroBot::IRC::User->new($src),
       dest    => $dest
     );
-    my $ispriv = $dest eq $network->nick ? 1 : 0;
 
     # TBD: Should we decode here, or let modules handle it when they need it?
     $body = decode_irc($body);
@@ -486,19 +501,14 @@ sub irc_spoke
     # Determine whether this is a plain message, or a command
     if ($msgtype == MSGTYPE_MESSAGE and substr($body, 0, 1) eq $cmdchar)
     {
-      my $cmd = ZeroBot::IRC::Command->new(
-        %event,
-        line    => $body,
-        private => $ispriv,
-      );
+      my $cmd = ZeroBot::IRC::Event::Command->new(%event, line => $body);
       module_send_event(commanded => $cmd);
     }
     else
     {
-      my $msg = ZeroBot::IRC::Message->new(
+      my $msg = ZeroBot::IRC::Event::Message->new(
         %event,
         type    => $msgtype,
-        private => $ispriv,
         message => $body,
       );
 
@@ -548,7 +558,7 @@ sub irc_erroneous_nickname
   # 432 ERR_ERRONEUSNICKNAME
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $rpl = ZeroBot::IRC::Reply->new($network, 432, @_[ARG0..ARG2]);
+  my $rpl = ZeroBot::IRC::ServerReply->new($network, 432, @_[ARG0..ARG2]);
   my $badnick = $rpl->msg->[0];
   my $netname = $network->name;
 
@@ -584,7 +594,7 @@ sub irc_nickname_in_use
   # 433 ERR_NICKNAMEINUSE
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $rpl = ZeroBot::IRC::Reply->new($network, 433, @_[ARG0..ARG2]);
+  my $rpl = ZeroBot::IRC::ServerReply->new($network, 433, @_[ARG0..ARG2]);
   my $nick = $rpl->msg->[0];
   my $netname = $network->name;
 
@@ -629,9 +639,9 @@ sub irc_default
   # Catch any numeric replies without a callback
   if ($event =~ /irc_(\d+)/)
   {
-    my $rpl = ZeroBot::IRC::Reply->new($network, $1, @$args);
+    my $rpl = ZeroBot::IRC::ServerReply->new($network, $1, @$args);
     module_send_event(unhandled_numeric => $rpl);
-    Log->verbose("[$netname] Numeric $1: ", @{$rpl->msg});
+    Log->verbose("[$netname] Numeric $1: ", join(' ', @{$rpl->msg}));
     return;
   }
 

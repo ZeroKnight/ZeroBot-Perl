@@ -1,12 +1,21 @@
-package ZeroBot::IRC::Reply;
+package ZeroBot::IRC::ServerReply;
 # Represents an arbitrary server reply (RPL_*, ERR_*)
 
 use ZeroBot::Common -types;
 
 use Moo;
-with 'ZeroBot::IRC::Event';
 
-has '+src' => (isa => Str);
+has network => (
+  is       => 'ro',
+  isa      => InstanceOf['ZeroBot::IRC::Network'],
+  required => 1,
+);
+
+has src => (
+  is       => 'ro',
+  isa      => InstanceOf['ZeroBot::IRC::Server'],
+  required => 1,
+);
 
 has numeric => (
   is       => 'ro',
@@ -30,9 +39,8 @@ around BUILDARGS => sub {
   my ($orig, $class, @args) = @_;
   return $class->$orig(
     network => $args[0],
-    dest    => $args[0]->nick,
     numeric => $args[1],
-    src     => $args[2],
+    src     => $args[0]->get_server($args[2]),
     rawmsg  => $args[3],
     msg     => $args[4]
   );

@@ -1,7 +1,8 @@
 package ZeroBot::IRC::Event;
+# Base class for various user-originating IRC events
 
 use ZeroBot::Common -types;
-use ZeroBot::IRC::User;
+use ZeroBot::Module 'module_send_event';
 
 use Carp;
 
@@ -15,25 +16,23 @@ has network => (
 
 has src => (
   is       => 'ro',
-  isa      => Any, # Overwritten by consuming classes
+  isa      => InstanceOf['ZeroBot::IRC::User'],
   required => 1,
 );
 
 has dests => (
-  is      => 'rwp',
+  is      => 'ro',
   isa     => ArrayRef,
   lazy    => 1,
   builder => sub { [ $_[0]->dest ] },
-  trigger => sub { $_[0]->_set_dest($_[1]->[0]) },
 );
 
 # Shortcut for first (or only) destination
 has dest => (
-  is      => 'rwp',
+  is      => 'ro',
   isa     => Str,
   lazy    => 1,
   builder => sub { $_[0]->dests->[0] },
-  trigger => sub { $_[0]->dests->[0] = $_[1] },
 );
 
 has time => (
@@ -42,11 +41,48 @@ has time => (
   default => sub { time },
 );
 
+has recipient => (
+  is       => 'rwp',
+  isa      => Str,
+  lazy     => 1,
+  init_arg => undef,
+  builder  => sub {
+    my $self = shift;
+    return $self->_ispriv() ? $self->src->nick : $self->dest;
+  },
+);
+
 sub BUILD
 {
   my ($self, $args) = @_;
   croak "Must initialize either dests or dest, but not both"
     unless $args->{dests} xor $args->{dest};
+}
+
+# Subclasses are expected to modify reply via `before` or `around` to format
+# @msg as appropriate.
+sub reply
+{
+  my ($self, @msg) = @_;
+  module_send_event(irc_msg_send => $self->network, $self->recipient, @msg);
+}
+
+sub respond
+{
+  my ($self, @msg) = @_;
+  module_send_event(irc_msg_send => $self->network, $self->recipient, @msg);
+}
+
+sub emote
+{
+  my ($self, @action) = @_;
+  module_send_event(irc_action_send => $self->network, $self->recipient, @action);
+}
+
+sub _ispriv
+{
+  my $self = shift;
+  return $self->dest eq $self->network->nick;
 }
 
 1;
