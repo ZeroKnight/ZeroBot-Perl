@@ -106,21 +106,21 @@ sub Bot_commanded
 sub Bot_irc_joined
 {
   my ($self, $core) = splice @_, 0, 2;
-  my ($network, $channel, $nick, $who) = map($$_, @_[0..3]);
+  my $join = ${ $_[0] };
 
   # Greet the channel upon joining
-  if ($nick eq $network->irc->nick_name)
+  if ($join->src->nick eq $join->network->nick)
   {
     # Unless we were recently kicked from here...
-    unless ($kicked_from{$channel})
+    unless ($kicked_from{$join->dest})
     {
       my @ary = $dbh->selectrow_array(q{
         SELECT * FROM chat_greetings
         ORDER BY RANDOM() LIMIT 1;
       });
-      react_with($ary[1] ? 'action' : 'msg', $network, $channel, $ary[0]);
+      react_with($ary[1] ? 'action' : 'msg', $join->network, $join->dest, $ary[0]);
     }
-    delete $kicked_from{$channel};
+    delete $kicked_from{$join->dest};
   }
   return MODULE_EAT_NONE;
 }
@@ -128,10 +128,10 @@ sub Bot_irc_joined
 sub Bot_irc_kicked
 {
   my ($self, $core) = splice @_, 0, 2;
-  my ($network, $channel, $nick, $who) = map($$_, @_[0..3]);
+  my $kick = ${ $_[0] };
 
   # Don't greet the channel on rejoin
-  $kicked_from{$channel} = 1 if $nick eq $network->irc->nick_name;
+  $kicked_from{$kick->dest} = 1 if $kick->kicked->nick eq $kick->network->nick;
 }
 
 sub Bot_irc_action { Bot_irc_msg(@_) }

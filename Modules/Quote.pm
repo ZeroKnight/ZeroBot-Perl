@@ -15,7 +15,6 @@ our $Description = 'Archive inspiring, humorous, or out-of-context, nonsensical 
 
 my $dbh;
 my $cfg;
-my %reply;
 my $data;
 
 sub Module_register
@@ -44,7 +43,6 @@ sub Module_register
   });
 
   $data  = {};
-  %reply = ();
 
   return MODULE_EAT_NONE;
 }
@@ -74,36 +72,30 @@ sub Bot_commanded
   );
   return MODULE_EAT_NONE unless $cmd->valid and $cmd->expected;
 
-  %reply = (
-    network => $cmd->network,
-    dest    => $cmd->dest,
-    nick    => $cmd->src_nick,
-  );
-
   if (exists $cmd->{opts}{add})
   {
     if ($cmd->argc < 2)
     {
-      reply('add requires at least two arguments: an author and a quote');
+      $cmd->reply('add requires at least two arguments: an author and a quote');
     }
     else
     {
-      quote_add(shift @{$cmd->args}, $cmd->args_str, $cmd->opts->{format} // 1);
+      quote_add($cmd, shift @{$cmd->args}, $cmd->args_str, $cmd->opts->{format} // 1);
     }
   }
   elsif (exists $cmd->{opts}{that} or $cmd->name eq 'grab')
   {
-    quote_grab($cmd->args->[0] // $cmd->{opts}{that});
+    quote_grab($cmd, $cmd->args->[0] // $cmd->{opts}{that});
   }
   elsif (exists $cmd->{opts}{delete})
   {
     if ($cmd->argc < 2)
     {
-      reply('delete requires at least two arguments: an author and a quote');
+      $cmd->reply('delete requires at least two arguments: an author and a quote');
     }
     else
     {
-      quote_del(shift @{$cmd->args}, $cmd->args_str);
+      quote_del($cmd, shift @{$cmd->args}, $cmd->args_str);
     }
   }
   elsif (exists $cmd->{opts}{stats})
@@ -112,11 +104,11 @@ sub Bot_commanded
   }
   elsif (exists $cmd->{opts}{recent})
   {
-    quote_recent($cmd->args->[0] // '.*', $cmd->opts->{recent} // 1);
+    quote_recent($cmd, $cmd->args->[0] // '.*', $cmd->opts->{recent} // 1);
   }
   else
   {
-    quote_recite(shift @{$cmd->args}, $cmd->args_str);
+    quote_recite($cmd, shift @{$cmd->args}, $cmd->args_str);
   }
   return MODULE_EAT_ALL;
 }
@@ -124,31 +116,30 @@ sub Bot_commanded
 sub Bot_irc_joined
 {
   my ($self, $core) = splice @_, 0, 2;
-  my ($network, $channel, $nick, $who) = map($$_, @_[0..3]);
+  my $join = ${ $_[0] };
+  my $nick = $join->src->nick;
 
-  return MODULE_EAT_NONE if $nick eq $network->nick;
+  return MODULE_EAT_NONE if $nick eq $join->network->nick;
   return if any {$nick eq $_} Config->get_as_list($cfg->{QuoteOnJoin}{ignore});
 
-  %reply = (
-    network => $network,
-    dest    => $channel,
-    nick    => $nick,
-  );
-
   # Auto-recite has a configurable cooldown (minutes)
-  my $join = $data->{$network->name}{$channel}{join} //= {};
+  my $join_hist = $data->{$join->network->name}{$join->dest}{join} //= {};
 
-  if (time > ($join->{$nick} || 0) + $cfg->{QuoteOnJoin}{cooldown} * 60)
+  if (time > ($join_hist->{$nick} || 0) + $cfg->{QuoteOnJoin}{cooldown} * 60)
   {
-    my $rows = $dbh->do('SELECT id FROM quote WHERE author = ?', undef, $nick)
-      or respond('Database error :( Take a peek at my log');
-    if ($rows > 0)
+    my @rows = $dbh->selectall_array('SELECT id FROM quote WHERE author = ?',
+      undef, $nick);
+    if ($dbh->errstr)
     {
-      quote_recite($nick);
-      $join->{$nick} = time;
+      $join->respond('Database error :( Take a peek at my log');
+      return;
+    }
+    if (@rows > 0)
+    {
+      quote_recite($join, $nick);
+      $join_hist->{$nick} = time;
     }
   }
-
   return MODULE_EAT_NONE;
 }
 
@@ -161,15 +152,15 @@ sub Bot_irc_msg
 
   # Keep track of the last thing a user said or did to allow for quick quotes
   my $last = $data->{$msg->network->name}{$msg->dest}{lastmsg} //= {};
-  $last->{$msg->src_nick} = [$msg->message, $type];
-  $last->{'!__LAST__'} = $msg->src_nick;
+  $last->{$msg->src->nick} = [$msg->message, $type];
+  $last->{'!__LAST__'} = $msg->src->nick;
 
   return MODULE_EAT_NONE;
 }
 
 sub quote_recite
 {
-  my ($author, $pattern) = @_;
+  my ($ev, $author, $pattern) = @_;
 
   # '*' is syntactic sugar for '.*' in quote command (only if alone)
   $author = '.*' if !$author or $author eq '*';
@@ -182,17 +173,17 @@ sub quote_recite
   }, undef, ("(?i:$author)", "(?i:$pattern)"));
   if ($dbh->errstr)
   {
-    reply("Database error :( Take a peek at my log");
+    $ev->reply("Database error :( Take a peek at my log");
     return;
   }
   elsif (!@row)
   {
-    reply("I couldn't find any quotes like that");
+    $ev->reply("I couldn't find any quotes like that");
     return;
   }
 
   my $quote = format_quote($row[0] =~ s|\n|\\|r, @row[1..2]);
-  respond($quote);
+  $ev->respond($quote);
 
   # TODO: set lastquote here (need to account for users with quotes <= to the
   # threshold)
@@ -200,36 +191,37 @@ sub quote_recite
 
 sub quote_add
 {
-  my ($author, $phrase, $format) = @_;
+  my ($ev, $author, $phrase, $format) = @_;
 
   my $rows = $dbh->do(q{
     INSERT INTO quote (phrase, author, submitter, format, time)
     VALUES (?, ?, ?, ?, ?)
-    }, undef, ($phrase, $author =~ s|,|\n|r, $reply{nick}, $format,
+    }, undef, ($phrase, $author =~ s|,|\n|r, $ev->src->nick, $format,
     strftime('%s', localtime))
   );
   if ($dbh->errstr)
   {
-    reply("Database error :( Take a peek at my log");
+    $ev->reply("Database error :( Take a peek at my log");
     return;
   }
 
   my $quote = format_quote($author, $phrase, $format);
-  reply("Okay, adding: $quote");
+  $ev->reply("Okay, adding: $quote");
   # TODO: set lastquote here
 }
 
 sub quote_grab
 {
-  my $last = $data->{$reply{network}->name}{$reply{dest}}{lastmsg};
+  my $ev = shift;
+  my $last = $data->{$ev->network->name}{$ev->dest}{lastmsg};
   my $author = shift // $last->{'!__LAST__'};
   my ($phrase, $format) = @{$last->{$author}};
-  quote_add($author, $phrase, $format);
+  quote_add($ev, $author, $phrase, $format);
 }
 
 sub quote_del
 {
-  my ($author, $phrase) = @_;
+  my ($ev, $author, $phrase) = @_;
   $author =~ s|,|\n|;
 
   my @row = $dbh->selectrow_array(q{
@@ -238,12 +230,12 @@ sub quote_del
   }, undef, ($author, $phrase));
   if ($dbh->errstr)
   {
-    reply("Database error :( Take a peek at my log");
+    $ev->reply("Database error :( Take a peek at my log");
     return;
   }
   elsif (!@row)
   {
-    reply('Quote not found...');
+    $ev->reply('Quote not found...');
     return;
   }
 
@@ -253,29 +245,28 @@ sub quote_del
   }, undef, ($author, $phrase));
   if ($dbh->errstr)
   {
-    reply("Database error :( Take a peek at my log");
+    $ev->reply("Database error :( Take a peek at my log");
     return;
   }
 
   my $quote = format_quote(@row);
-  reply("Okay, removing: $quote");
+  $ev->reply("Okay, removing: $quote");
   # TODO: set lastquote here
 }
 
 sub quote_stats
 {
-  my $cmd = shift;
-  my $query = $cmd->args->[0];
-  $DB::single = 1;
+  my $ev = shift;
+  my $query = $ev->args->[0];
   my $query_type = '';
-  $query_type    = 'owned'     if exists $cmd->opts->{owned};
-  $query_type    = 'submitted' if exists $cmd->opts->{submitted};
+  $query_type    = 'owned'     if exists $ev->opts->{owned};
+  $query_type    = 'submitted' if exists $ev->opts->{submitted};
 
   my $msg;
   my $totalquotes = ($dbh->selectrow_array('SELECT COUNT(*) FROM quote'))[0];
   unless ($totalquotes)
   {
-    reply("I don't know any quotes!");
+    $ev->reply("I don't know any quotes!");
     return;
   }
 
@@ -289,12 +280,12 @@ sub quote_stats
     }, undef, ("(?i:\\n?$query\\n?)", "(?i:$query)"));
     if ($dbh->errstr)
     {
-      reply("Database error :( Take a peek at my log");
+      $ev->reply("Database error :( Take a peek at my log");
       return;
     }
     elsif (!@rows)
     {
-      reply(sprintf("There are no %s by %s",
+      $ev->reply(sprintf("There are no %s by %s",
         $query_type eq 'owned' ? 'quotes' : 'submissions', $query));
       return;
     }
@@ -409,12 +400,12 @@ sub quote_stats
       datetime_diff($row->[0][2]);
     }
   }
-  reply($msg);
+  $ev->reply($msg);
 }
 
 sub quote_recent
 {
-  my ($author, $num) = @_;
+  my ($ev, $author, $num) = @_;
   if ($num =~ /^\d+$/)
   {
     $num = clamp($num, 1, 5);
@@ -434,22 +425,22 @@ sub quote_recent
   }, undef, ("(?i:$author)", $num));
   if ($dbh->errstr)
   {
-    reply("Database error :( Take a peek at my log");
+    $ev->reply("Database error :( Take a peek at my log");
     return;
   }
   elsif (!@row)
   {
-    reply("I couldn't find any quotes like that");
+    $ev->reply("I couldn't find any quotes like that");
     return;
   }
 
-  reply(pluralize('Here (is|are) the (%d )most recent quote(s)', $num),
+  $ev->reply(pluralize('Here (is|are) the (%d )most recent quote(s)', $num),
     ($author eq '.*' ? '' : " by $author"), ': ');
 
   foreach my $row (@row)
   {
     my $quote = format_quote($row->[0] =~ s|\n|\\|r, @$row[1..2]);
-    respond( "— $quote");
+    $ev->respond( "— $quote");
   }
 }
 
@@ -507,22 +498,6 @@ sub datetime_diff
 {
   my $ts = shift;
   return strftime('%F @ %T', localtime($ts)) . ' (' . ago(time - $ts, 3) . ')';
-}
-
-sub respond
-{
-  module_send_event(irc_msg_send => $reply{network}, $reply{dest}, @_);
-}
-
-sub reply
-{
-  module_send_event(irc_msg_send => $reply{network}, $reply{dest},
-    "$reply{nick}: ", @_);
-}
-
-sub emote
-{
-  module_send_event(irc_action_send => $reply{network}, $reply{dest}, @_);
 }
 
 1;
