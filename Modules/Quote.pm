@@ -27,7 +27,7 @@ sub Module_register
   module_register($self, 'SERVER', qw(
     commanded
     irc_joined
-    irc_msg_public
+    irc_msg
     irc_action
   ));
 
@@ -152,8 +152,8 @@ sub Bot_irc_joined
   return MODULE_EAT_NONE;
 }
 
-sub Bot_irc_action { Bot_irc_msg_public(@_, 2) }
-sub Bot_irc_msg_public
+sub Bot_irc_action { Bot_irc_msg_(@_, 2) }
+sub Bot_irc_msg
 {
   my ($self, $core) = splice @_, 0, 2;
   my $msg  = ${ $_[0] };
