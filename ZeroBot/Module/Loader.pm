@@ -43,6 +43,7 @@ sub module_load
   else
   {
     delete $INC{$file} unless $m->bad_module;
+    return;
   }
   return $m;
 }
