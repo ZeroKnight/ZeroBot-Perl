@@ -143,7 +143,7 @@ sub Bot_irc_joined
   return MODULE_EAT_NONE;
 }
 
-sub Bot_irc_action { Bot_irc_msg_(@_, 2) }
+sub Bot_irc_action { Bot_irc_msg(@_, 2) }
 sub Bot_irc_msg
 {
   my ($self, $core) = splice @_, 0, 2;
