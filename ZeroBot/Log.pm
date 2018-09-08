@@ -6,7 +6,7 @@ use ZeroBot::Util qw(tsprintf);
 use Carp;
 use POSIX ();
 
-use Moo;
+use Moose;
 with 'ZeroBot::Log::Settings';
 
 my %levelmap = (

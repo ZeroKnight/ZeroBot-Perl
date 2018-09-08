@@ -1,6 +1,6 @@
 package ZeroBot::Module::Quote;
 
-use Moo;
+use Moose;
 use ZeroBot::Common -consts_cmd, -string;
 use ZeroBot::Module -std;
 use ZeroBot::Util 'clamp';

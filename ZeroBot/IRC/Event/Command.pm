@@ -5,7 +5,7 @@ use Import::Into;
 
 ZeroBot::Command::Constants->import::into(scalar caller);
 
-use Moo;
+use Moose;
 extends 'ZeroBot::Command';
 with 'ZeroBot::IRC::Event';
 
@@ -14,7 +14,7 @@ has private => (
   isa      => Bool,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->_ispriv() },
+  default  => sub { $_[0]->_ispriv() },
 );
 
 around 'reply' => sub

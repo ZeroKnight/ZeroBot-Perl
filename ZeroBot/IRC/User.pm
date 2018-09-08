@@ -4,7 +4,7 @@ use ZeroBot::Common -types;
 
 use IRC::Utils qw(parse_user);
 
-use Moo;
+use Moose;
 
 has hostmask => (
   is       => 'ro',
@@ -18,7 +18,7 @@ has nick => (
   lazy      => 1,
   predicate => 1,
   init_arg  => undef,
-  builder   => sub { parse_user($_[0]->hostmask) },
+  default   => sub { parse_user($_[0]->hostmask) },
 );
 
 has user => (
@@ -27,7 +27,7 @@ has user => (
   lazy      => 1,
   predicate => 1,
   init_arg  => undef,
-  builder   => sub { (parse_user($_[0]->hostmask))[1] },
+  default   => sub { (parse_user($_[0]->hostmask))[1] },
 );
 
 has hostname => (
@@ -36,7 +36,7 @@ has hostname => (
   lazy      => 1,
   predicate => 1,
   init_arg  => undef,
-  builder   => sub { (parse_user($_[0]->hostmask))[2] },
+  default   => sub { (parse_user($_[0]->hostmask))[2] },
 );
 
 around BUILDARGS => sub {

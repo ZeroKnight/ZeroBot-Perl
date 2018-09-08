@@ -5,7 +5,7 @@ BEGIN { use_ok('ZeroBot::Util::File') }
 
 package TestConsumer
 {
-  use Moo;
+  use Moose;
   with 'ZeroBot::Util::File';
 
   has foo => (is => 'rw', isa => sub { 1 }, default => '1', predicate => 1);

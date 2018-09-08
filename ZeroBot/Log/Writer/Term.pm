@@ -2,7 +2,7 @@ package ZeroBot::Log::Writer::Term;
 
 use ZeroBot::Common;
 
-use Moo;
+use Moose;
 with 'ZeroBot::Log::Settings';
 
 sub write

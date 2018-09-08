@@ -5,7 +5,7 @@ use ZeroBot::Common -types;
 use DBI;
 use Carp;
 
-use Moo;
+use Moose;
 with 'ZeroBot::Util::File';
 
 has handles => (

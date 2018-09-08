@@ -6,7 +6,7 @@ use ZeroBot::Module 'module_send_event';
 
 use Carp;
 
-use Moo::Role;
+use Moose::Role;
 
 has network => (
   is       => 'ro',
@@ -24,7 +24,7 @@ has dests => (
   is      => 'ro',
   isa     => ArrayRef,
   lazy    => 1,
-  builder => sub { [ $_[0]->dest ] },
+  default => sub { [ $_[0]->dest ] },
 );
 
 # Shortcut for first (or only) destination
@@ -32,7 +32,7 @@ has dest => (
   is      => 'ro',
   isa     => Str,
   lazy    => 1,
-  builder => sub { $_[0]->dests->[0] },
+  default => sub { $_[0]->dests->[0] },
 );
 
 has time => (
@@ -46,7 +46,7 @@ has recipient => (
   isa      => Str,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub {
+  default  => sub {
     my $self = shift;
     return $self->_ispriv() ? $self->src->nick : $self->dest;
   },

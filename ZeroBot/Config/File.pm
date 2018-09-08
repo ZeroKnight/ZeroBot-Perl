@@ -5,7 +5,7 @@ use ZeroBot::Common -types;
 use List::Util qw(any);
 use Config::IniFiles;
 
-use Moo;
+use Moose;
 with 'ZeroBot::Util::File';
 
 # Holds the deserialized configuration file

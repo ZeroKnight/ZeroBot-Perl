@@ -1,6 +1,6 @@
 package ZeroBot::Module::Magic8Ball;
 
-use Moo;
+use Moose;
 use ZeroBot::Common -consts_cmd;
 use ZeroBot::Module -std;
 

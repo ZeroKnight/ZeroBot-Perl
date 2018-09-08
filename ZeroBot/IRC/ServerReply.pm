@@ -3,7 +3,7 @@ package ZeroBot::IRC::ServerReply;
 
 use ZeroBot::Common -types;
 
-use Moo;
+use Moose;
 
 has network => (
   is       => 'ro',

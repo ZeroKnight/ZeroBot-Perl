@@ -2,7 +2,7 @@ package ZeroBot::IRC::Event::Kick;
 
 use ZeroBot::Common -types;
 
-use Moo;
+use Moose;
 with 'ZeroBot::IRC::Event';
 
 has kicked => (

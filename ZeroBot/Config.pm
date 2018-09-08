@@ -5,7 +5,7 @@ use ZeroBot::Common -types;
 use ZeroBot::Config::File;
 
 use Carp;
-use Moo;
+use Moose;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 
@@ -19,7 +19,7 @@ has core_file => (
   isa      => InstanceOf['ZeroBot::Config::File'],
   lazy     => 1,
   init_arg => undef,
-  builder  => sub {
+  default  => sub {
     my $self = shift;
     ZeroBot::Config::File->new(
       filepath => $self->_cfg_path($paths{core})
@@ -32,7 +32,7 @@ has modules_file => (
   isa      => InstanceOf['ZeroBot::Config::File'],
   lazy     => 1,
   init_arg => undef,
-  builder  => sub {
+  default  => sub {
     my $self = shift;
     ZeroBot::Config::File->new(
       filepath => $self->_cfg_path($paths{modules})
@@ -44,7 +44,7 @@ has protocol_files => (
   is       => 'rwp',
   isa      => HashRef[InstanceOf['ZeroBot::Config::File']],
   init_arg => undef,
-  builder  => sub { +{} },
+  default  => sub { +{} },
 );
 
 # Convenient config section accessors
@@ -54,7 +54,7 @@ has core => (
   isa      => HashRef,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->core_file->hash },
+  default  => sub { $_[0]->core_file->hash },
 );
 
 has modules => (
@@ -62,7 +62,7 @@ has modules => (
   isa     => HashRef,
   lazy    => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->modules_file->hash },
+  default  => sub { $_[0]->modules_file->hash },
 );
 
 sub proto

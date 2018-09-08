@@ -14,10 +14,10 @@ use Path::Tiny;
 use Try::Tiny;
 use Text::Pluralize;
 
-use Moo;
+use Moose;
 use Types::Standard qw(HashRef InstanceOf);
 use Types::Path::Tiny qw(Path);
-with 'MooX::Singleton';
+with 'MooseX::Singleton';
 
 # PoCo::Syndicator comprises the heart of ZeroBot's module (plugin) system
 extends 'POE::Component::Syndicator';
@@ -33,7 +33,7 @@ has cfg => (
   is       => 'rwp',
   isa      => InstanceOf['ZeroBot::Config'],
   lazy     => 1,
-  builder  => sub {
+  default  => sub {
     my $self = shift;
     ZeroBot::Config->new($self->cfg_dir->stringify);
   },
@@ -43,7 +43,7 @@ has log => (
   is      => 'ro',
   isa     => InstanceOf['ZeroBot::Log'],
   lazy    => 1,
-  builder => sub {
+  default => sub {
     my $self = shift;
     my $level = $self->cfg->core->{Logging}{Level};
     ZeroBot::Log->new(defined $level ? (level => $level) : ());
@@ -62,7 +62,7 @@ has module_dir => (
   isa     => Path,
   lazy    => 1,
   coerce  => 1,
-  builder => sub {
+  default => sub {
     my $self = shift;
     $self->cfg->core->{Modules}{Path} // path('Modules');
   },
@@ -81,7 +81,7 @@ has cmdchar => (
       unless length($_[0]) == 1;
   },
   lazy    => 1,
-  builder => sub {
+  default => sub {
     my $self = shift;
     $self->cfg->core->{Core}{CmdChar} // '!';
   },

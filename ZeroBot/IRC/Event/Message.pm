@@ -18,7 +18,7 @@ use constant \%constants;
 our @EXPORT = (keys %constants);
 our @EXPORT_OK = qw();
 
-use Moo;
+use Moose;
 extends 'Exporter::Tiny';
 with 'ZeroBot::IRC::Event';
 
@@ -33,7 +33,7 @@ has private => (
   isa      => Bool,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->_ispriv() },
+  default  => sub { $_[0]->_ispriv() },
 );
 
 has message => (

@@ -2,7 +2,7 @@ package ZeroBot::IRC::Event::Join;
 
 use ZeroBot::Common -types;
 
-use Moo;
+use Moose;
 with 'ZeroBot::IRC::Event';
 
 sub BUILD

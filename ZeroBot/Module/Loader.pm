@@ -69,7 +69,7 @@ sub module_unload
 
   # Remove the module from %INC so that `require` actually reads the file again
   # There can actually be two entries, as the module's path may not reflect the
-  # fixed 'ZeroBot::Module' namespace. I *think* that Moo is responsible for
+  # fixed 'ZeroBot::Module' namespace. I *think* that Moose is responsible for
   # this second entry.
   delete $INC{ZBCore->modules->{$module}->filepath};
   delete $INC{"ZeroBot/Module/$module.pm"};

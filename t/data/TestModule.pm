@@ -1,6 +1,6 @@
 package ZeroBot::Module::TestModule;
 
-use Moo;
+use Moose;
 use ZeroBot::Module -std;
 no warnings 'redefine';
 

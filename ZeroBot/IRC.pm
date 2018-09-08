@@ -25,7 +25,7 @@ use POE qw(
 );
 
 use Carp;
-use Moo;
+use Moose;
 
 has networks => (
   is       => 'rw',
@@ -38,7 +38,7 @@ has cfg => (
   is       => 'ro',
   isa      => HashRef,
   init_arg => undef,
-  builder  => sub { Config->proto('irc') },
+  default  => sub { Config->proto('irc') },
 );
 
 sub Module_register

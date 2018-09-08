@@ -9,7 +9,7 @@ use Path::Tiny;
 
 use constant TIMER_STEP => 15; # ms
 
-use Moo;
+use Moose;
 with 'ZeroBot::Log::Settings', 'ZeroBot::Util::File';
 
 has handle => (
@@ -30,7 +30,7 @@ has mode => (
   isa      => Int,
   init_arg => undef,
   lazy     => 1,
-  builder  => sub {
+  default  => sub {
     my $self = shift;
     O_WRONLY | O_CREAT | ($self->append ? O_APPEND : 0);
   },

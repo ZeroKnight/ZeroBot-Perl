@@ -3,7 +3,7 @@ package ZeroBot::Module::Chat;
 use Carp;
 use List::Util qw(any);
 
-use Moo;
+use Moose;
 use ZeroBot::Common -consts_cmd;
 use ZeroBot::Module qw(:std module_delay_event);
 

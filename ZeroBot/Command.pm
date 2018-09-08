@@ -6,7 +6,7 @@ use Carp;
 use ZeroBot::Command::Constants;
 use ZeroBot::Command::Parser;
 
-use Moo;
+use Moose;
 
 # TODO: build in support for help? ie. auto-generate
 # TODO: support incremental options like -vvv?

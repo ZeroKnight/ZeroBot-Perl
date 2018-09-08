@@ -2,7 +2,7 @@ package ZeroBot::IRC::Server;
 
 use strictures 2;
 
-use Moo;
+use Moose;
 use Types::Standard qw(Int Str Bool);
 
 has hostname => (

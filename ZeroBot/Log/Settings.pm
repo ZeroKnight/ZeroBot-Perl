@@ -2,7 +2,7 @@ package ZeroBot::Log::Settings;
 
 use ZeroBot::Common -types;
 
-use Moo::Role;
+use Moose::Role;
 
 has output_format => (
   is  => 'rw',

@@ -2,7 +2,7 @@ package ZeroBot::Util::File;
 
 use ZeroBot::Common -types;
 
-use Moo::Role;
+use Moose::Role;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 
@@ -20,7 +20,7 @@ has filename => (
   isa      => Str,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->filepath->basename },
+  default  => sub { $_[0]->filepath->basename },
 );
 
 has filename_root => (
@@ -28,7 +28,7 @@ has filename_root => (
   isa      => Str,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->filepath->basename($re_ext) },
+  default  => sub { $_[0]->filepath->basename($re_ext) },
 );
 
 has fileext => (
@@ -36,7 +36,7 @@ has fileext => (
   isa      => Str,
   lazy     => 1,
   init_arg => undef,
-  builder  => sub { $_[0]->filepath->basename =~ $re_ext and $1 },
+  default  => sub { $_[0]->filepath->basename =~ $re_ext and $1 },
 );
 
 sub basename_no_ext { $_[0]->basename($re_ext) }

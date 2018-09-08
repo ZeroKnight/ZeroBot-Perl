@@ -2,7 +2,7 @@ package ZeroBot::Module::Roulette;
 
 use List::Util 'first';
 
-use Moo;
+use Moose;
 use ZeroBot::Common -consts_cmd;
 use ZeroBot::Module qw(:std module_delay_event);
 use ZeroBot::Util::IRC 'is_valid_chan_name_lax';

@@ -6,7 +6,7 @@ use Carp;
 use List::Util 'none';
 use ZeroBot::Command::Constants;
 
-use Moo;
+use Moose;
 
 has cmd => (
   is       => 'ro',
@@ -30,7 +30,7 @@ has pos => (
 has end => (
   is       => 'ro',
   isa      => Int,
-  builder  => sub { length $_[0]->cmd->line },
+  default  => sub { length $_[0]->cmd->line },
   init_arg => undef,
 );
 

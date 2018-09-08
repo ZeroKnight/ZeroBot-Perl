@@ -1,6 +1,6 @@
 package ZeroBot::Module::ModuleManager;
 
-use Moo;
+use Moose;
 
 use ZeroBot::Common -consts_cmd;
 use ZeroBot::Module -std;
