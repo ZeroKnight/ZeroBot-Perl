@@ -4,6 +4,7 @@ use Carp;
 use List::Util qw(any);
 
 use Moose;
+use MooseX::AttributeShortcuts;
 use ZeroBot::Common -consts_cmd;
 use ZeroBot::Module qw(:std module_delay_event);
 

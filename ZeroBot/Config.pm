@@ -6,6 +6,7 @@ use ZeroBot::Config::File;
 
 use Carp;
 use Moose;
+use MooseX::AttributeShortcuts;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 

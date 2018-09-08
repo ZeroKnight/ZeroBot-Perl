@@ -1,6 +1,7 @@
 package ZeroBot::Module::TestModule;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 use ZeroBot::Module -std;
 no warnings 'redefine';
 

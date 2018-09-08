@@ -15,6 +15,7 @@ use Try::Tiny;
 use Text::Pluralize;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 use Types::Standard qw(HashRef InstanceOf);
 use Types::Path::Tiny qw(Path);
 with 'MooseX::Singleton';

@@ -5,6 +5,7 @@ use ZeroBot::Common -types;
 use IRC::Utils qw(parse_user);
 
 use Moose;
+use MooseX::AttributeShortcuts;
 
 has hostmask => (
   is       => 'ro',

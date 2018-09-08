@@ -3,6 +3,7 @@ package ZeroBot::Util::File;
 use ZeroBot::Common -types;
 
 use Moose::Role;
+use MooseX::AttributeShortcuts;
 use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 

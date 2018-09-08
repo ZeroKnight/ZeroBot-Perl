@@ -7,6 +7,7 @@ use ZeroBot::Command::Constants;
 use ZeroBot::Command::Parser;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 
 # TODO: build in support for help? ie. auto-generate
 # TODO: support incremental options like -vvv?

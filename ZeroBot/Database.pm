@@ -6,6 +6,7 @@ use DBI;
 use Carp;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 with 'ZeroBot::Util::File';
 
 has handles => (

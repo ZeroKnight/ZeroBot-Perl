@@ -7,6 +7,7 @@ use ZeroBot::Module 'module_send_event';
 use Carp;
 
 use Moose::Role;
+use MooseX::AttributeShortcuts;
 
 has network => (
   is       => 'ro',

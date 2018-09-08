@@ -6,6 +6,7 @@ use List::Util qw(any);
 use Config::IniFiles;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 with 'ZeroBot::Util::File';
 
 # Holds the deserialized configuration file

@@ -1,6 +1,7 @@
 package ZeroBot::Module::NumGuess;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 use ZeroBot::Common -consts_cmd;
 use ZeroBot::Module -std;
 use ZeroBot::Util::IRC 'is_valid_chan_name_lax';

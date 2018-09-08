@@ -6,6 +6,7 @@ use Import::Into;
 ZeroBot::Command::Constants->import::into(scalar caller);
 
 use Moose;
+use MooseX::AttributeShortcuts;
 extends 'ZeroBot::Command';
 with 'ZeroBot::IRC::Event';
 

@@ -6,6 +6,7 @@ use Path::Tiny;
 use Types::Path::Tiny qw(Path);
 
 use Moose;
+use MooseX::AttributeShortcuts;
 with 'ZeroBot::Util::File';
 
 # TODO: Look into running superclass BUILDARGS subs

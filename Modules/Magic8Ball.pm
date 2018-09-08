@@ -1,6 +1,7 @@
 package ZeroBot::Module::Magic8Ball;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 use ZeroBot::Common -consts_cmd;
 use ZeroBot::Module -std;
 

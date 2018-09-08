@@ -4,6 +4,7 @@ package ZeroBot::IRC::ServerReply;
 use ZeroBot::Common -types;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 
 has network => (
   is       => 'ro',

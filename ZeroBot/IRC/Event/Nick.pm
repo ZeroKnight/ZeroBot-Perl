@@ -3,6 +3,7 @@ package ZeroBot::IRC::Event::Nick;
 use ZeroBot::Common -types;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 with 'ZeroBot::IRC::Event';
 
 has newnick => (

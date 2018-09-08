@@ -7,6 +7,7 @@ use List::Util 'none';
 use ZeroBot::Command::Constants;
 
 use Moose;
+use MooseX::AttributeShortcuts;
 
 has cmd => (
   is       => 'ro',

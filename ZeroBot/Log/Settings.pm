@@ -3,6 +3,7 @@ package ZeroBot::Log::Settings;
 use ZeroBot::Common -types;
 
 use Moose::Role;
+use MooseX::AttributeShortcuts;
 
 has output_format => (
   is  => 'rw',

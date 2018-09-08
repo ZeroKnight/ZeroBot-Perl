@@ -10,6 +10,7 @@ use Path::Tiny;
 use constant TIMER_STEP => 15; # ms
 
 use Moose;
+use MooseX::AttributeShortcuts;
 with 'ZeroBot::Log::Settings', 'ZeroBot::Util::File';
 
 has handle => (

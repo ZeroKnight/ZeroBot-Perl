@@ -19,6 +19,7 @@ our @EXPORT = (keys %constants);
 our @EXPORT_OK = qw();
 
 use Moose;
+use MooseX::AttributeShortcuts;
 extends 'Exporter::Tiny';
 with 'ZeroBot::IRC::Event';
 

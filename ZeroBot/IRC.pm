@@ -26,6 +26,7 @@ use POE qw(
 
 use Carp;
 use Moose;
+use MooseX::AttributeShortcuts;
 
 has networks => (
   is       => 'rw',

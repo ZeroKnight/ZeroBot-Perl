@@ -7,6 +7,7 @@ use Carp;
 use POSIX ();
 
 use Moose;
+use MooseX::AttributeShortcuts;
 with 'ZeroBot::Log::Settings';
 
 my %levelmap = (
