@@ -11,19 +11,19 @@ use MooseX::AttributeShortcuts;
 
 has network => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::IRC::Network'],
+  isa      => 'ZeroBot::IRC::Network',
   required => 1,
 );
 
 has src => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::IRC::User'],
+  isa      => 'ZeroBot::IRC::User',
   required => 1,
 );
 
 has dests => (
   is      => 'ro',
-  isa     => ArrayRef,
+  isa     => 'ArrayRef',
   lazy    => 1,
   default => sub { [ $_[0]->dest ] },
 );
@@ -31,20 +31,20 @@ has dests => (
 # Shortcut for first (or only) destination
 has dest => (
   is      => 'ro',
-  isa     => Str,
+  isa     => 'Str',
   lazy    => 1,
   default => sub { $_[0]->dests->[0] },
 );
 
 has time => (
   is      => 'ro',
-  isa     => Int,
+  isa     => 'Int',
   default => sub { time },
 );
 
 has recipient => (
   is       => 'rwp',
-  isa      => Str,
+  isa      => 'Str',
   lazy     => 1,
   init_arg => undef,
   default  => sub {

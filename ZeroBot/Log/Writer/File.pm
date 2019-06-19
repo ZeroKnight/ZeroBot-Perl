@@ -15,20 +15,20 @@ with 'ZeroBot::Log::Settings', 'ZeroBot::Util::File';
 
 has handle => (
   is       => 'rwp',
-  isa      => FileHandle,
+  isa      => 'FileHandle',
   init_arg => undef,
   predicate => 1,
 );
 
 has append => (
   is      => 'ro',
-  isa     => Bool,
+  isa     => 'Bool',
   default => sub { 1 },
 );
 
 has mode => (
   is       => 'ro',
-  isa      => Int,
+  isa      => 'Int',
   init_arg => undef,
   lazy     => 1,
   default  => sub {
@@ -39,19 +39,19 @@ has mode => (
 
 has perms => (
   is      => 'ro',
-  isa     => Int,
+  isa     => 'Int',
   default => sub { 0666 },
 );
 
 has lock_timeout => (
   is      => 'rw',
-  isa     => Int,
+  isa     => 'Int',
   default => sub { 2000 }, # ms
 );
 
 has _flock_buffer => (
   is       => 'rwp',
-  isa      => ArrayRef,
+  isa      => 'ArrayRef',
   init_arg => undef,
   default  => sub { [] },
 );

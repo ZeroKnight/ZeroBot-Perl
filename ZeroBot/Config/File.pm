@@ -12,8 +12,7 @@ with 'ZeroBot::Util::File';
 # Holds the deserialized configuration file
 has data => (
   is       => 'rwp',
-  isa      => HashRef,
-  lazy     => 1,
+  isa      => 'HashRef',
   init_arg => undef,
   trigger  => sub { $_[0]->_update_hash_from_data() },
 );
@@ -22,8 +21,7 @@ has data => (
 # their own hashes
 has hash => (
   is       => 'rwp',
-  isa      => HashRef,
-  lazy     => 1,
+  isa      => 'HashRef',
   init_arg => undef,
 );
 

@@ -12,7 +12,7 @@ with 'ZeroBot::IRC::Event';
 
 has private => (
   is       => 'ro',
-  isa      => Bool,
+  isa      => 'Bool',
   lazy     => 1,
   init_arg => undef,
   default  => sub { $_[0]->_ispriv() },

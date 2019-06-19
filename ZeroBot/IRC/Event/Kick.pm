@@ -8,13 +8,13 @@ with 'ZeroBot::IRC::Event';
 
 has kicked => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::IRC::User'],
+  isa      => 'ZeroBot::IRC::User',
   required => 1,
 );
 
 has reason => (
   is       => 'ro',
-  isa      => Str,
+  isa      => 'Str',
   required => 1,
 );
 

@@ -8,7 +8,7 @@ use Types::Standard qw(Int Str Bool);
 
 has hostname => (
   is       => 'rwp',
-  isa      => Str,
+  isa      => 'Str',
   required => 1,
 );
 
@@ -16,31 +16,32 @@ has hostname => (
 # hostname. This member represents whatever name the server claims.
 has servername => (
   is       => 'rwp',
-  isa      => Str,
+  isa      => 'Str',
+  lazy     => 1,
   init_arg => undef,
   default  => sub { $_[0]->hostname },
 );
 
 has port => (
   is      => 'rwp',
-  isa     => Int,
+  isa     => 'Int',
   default => 6667,
 );
 
 has password => (
   is  => 'rwp',
-  isa => Str,
+  isa => 'Str',
 );
 
 has ssl => (
   is  => 'rwp',
-  isa => Bool,
+  isa => 'Bool',
   default => 0,
 );
 
 has ipv6 => (
   is  => 'rwp',
-  isa => Bool,
+  isa => 'Bool',
   default => 0,
 );
 

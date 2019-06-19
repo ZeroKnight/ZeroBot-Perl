@@ -50,7 +50,7 @@ has '+time_format' => (
 
 has writers => (
   is       => 'rwp',
-  isa      => HashRef[InstanceOf['ZeroBot::Log::Writer']],
+  isa      => 'HashRef[ZeroBot::Log::Writer]',
   init_arg => undef,
   default  => sub { +{} },
 );

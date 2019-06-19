@@ -30,14 +30,14 @@ use MooseX::AttributeShortcuts;
 
 has networks => (
   is       => 'rw',
-  isa      => HashRef[InstanceOf['ZeroBot::IRC::Network']],
+  isa      => 'HashRef[ZeroBot::IRC::Network]',
   init_arg => undef,
   default  => sub{ +{} },
 );
 
 has cfg => (
   is       => 'ro',
-  isa      => HashRef,
+  isa      => 'HashRef',
   init_arg => undef,
   default  => sub { Config->proto('irc') },
 );

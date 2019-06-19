@@ -7,14 +7,14 @@ use MooseX::AttributeShortcuts;
 
 has output_format => (
   is  => 'rw',
-  isa => Str,
+  isa => 'Str',
   default => sub { '%time | %levelpad[%level] %msg' },
   predicate => 1,
 );
 
 has time_format => (
   is  => 'rw',
-  isa => Str,
+  isa => 'Str',
   default => sub { '%F %T' },
   predicate => 1,
 );

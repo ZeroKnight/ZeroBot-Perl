@@ -11,7 +11,7 @@ with 'ZeroBot::Util::File';
 
 has handles => (
   is       => 'rwp',
-  isa      => HashRef[InstanceOf['DBI::db']],
+  isa      => 'HashRef[DBI::db]',
   lazy     => 1,
   default => sub { +{} },
   init_arg => undef,
@@ -19,19 +19,19 @@ has handles => (
 
 has user => (
   is      => 'ro',
-  isa     => Maybe[Str],
+  isa     => 'Maybe[Str]',
   default => sub { '' },
 );
 
 has password => (
   is      => 'ro',
-  isa     => Maybe[Str], # or some object that represents the hashed password
+  isa     => 'Maybe[Str]', # or some object that represents the hashed password
   default => sub { '' },
 );
 
 has backups_enabled => (
   is      => 'rwp',
-  isa     => Bool,
+  isa     => 'Bool',
   default => sub { 1 },
 );
 

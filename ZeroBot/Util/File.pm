@@ -18,7 +18,7 @@ has filepath => (
 
 has filename => (
   is       => 'ro',
-  isa      => Str,
+  isa      => 'Str',
   lazy     => 1,
   init_arg => undef,
   default  => sub { $_[0]->filepath->basename },
@@ -26,7 +26,7 @@ has filename => (
 
 has filename_root => (
   is       => 'rwp',
-  isa      => Str,
+  isa      => 'Str',
   lazy     => 1,
   init_arg => undef,
   default  => sub { $_[0]->filepath->basename($re_ext) },
@@ -34,7 +34,7 @@ has filename_root => (
 
 has fileext => (
   is       => 'ro',
-  isa      => Str,
+  isa      => 'Str',
   lazy     => 1,
   init_arg => undef,
   default  => sub { $_[0]->filepath->basename =~ $re_ext and $1 },

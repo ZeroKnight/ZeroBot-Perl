@@ -8,31 +8,31 @@ use MooseX::AttributeShortcuts;
 
 has network => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::IRC::Network'],
+  isa      => 'ZeroBot::IRC::Network',
   required => 1,
 );
 
 has src => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::IRC::Server'],
+  isa      => 'ZeroBot::IRC::Server',
   required => 1,
 );
 
 has numeric => (
   is       => 'ro',
-  isa      => Int,
+  isa      => 'Int',
   required => 1,
 );
 
 has rawmsg => (
   is       => 'ro',
-  isa      => Str,
+  isa      => 'Str',
   required => 1,
 );
 
 has msg => (
   is       => 'ro',
-  isa      => ArrayRef,
+  isa      => 'ArrayRef',
   required => 1,
 );
 

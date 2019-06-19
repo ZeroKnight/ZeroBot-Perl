@@ -36,7 +36,7 @@ has cfg_dir => (
 
 has cfg => (
   is       => 'rwp',
-  isa      => InstanceOf['ZeroBot::Config'],
+  isa      => 'ZeroBot::Config',
   lazy     => 1,
   default  => sub {
     my $self = shift;
@@ -46,7 +46,7 @@ has cfg => (
 
 has log => (
   is      => 'ro',
-  isa     => InstanceOf['ZeroBot::Log'],
+  isa     => 'ZeroBot::Log',
   lazy    => 1,
   default => sub {
     my $self = shift;
@@ -57,8 +57,7 @@ has log => (
 
 has db => (
   is       => 'rwp',
-  isa      => InstanceOf['ZeroBot::Database'],
-  lazy     => 1,
+  isa      => 'ZeroBot::Database',
   init_arg => undef,
 );
 
@@ -75,7 +74,7 @@ has module_dir => (
 
 has modules => (
   is      => 'rwp',
-  isa     => HashRef[InstanceOf['ZeroBot::Module::File']],
+  isa     => 'HashRef[ZeroBot::Module::File]',
   default => sub { +{} },
 );
 

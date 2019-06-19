@@ -14,25 +14,25 @@ use MooseX::AttributeShortcuts;
 
 has line => (
   is       => 'ro',
-  isa      => Str,
+  isa      => 'Str',
   required => 1,
 );
 
 has name => (
   is       => 'rwp',
-  isa      => Str,
+  isa      => 'Str',
   init_arg => undef,
 );
 
 has argc => (
   is       => 'rwp',
-  isa      => Int,
+  isa      => 'Int',
   init_arg => undef,
 );
 
 has args => (
   is        => 'rwp',
-  isa       => ArrayRef[Str],
+  isa       => 'ArrayRef[Str]',
   default   => sub { [] },
   predicate => 1,
   init_arg  => undef,
@@ -40,7 +40,7 @@ has args => (
 
 has opts => (
   is        => 'rwp',
-  isa       => HashRef,
+  isa       => 'HashRef',
   default   => sub { {} },
   predicate => 1,
   init_arg  => undef,
@@ -50,7 +50,7 @@ has opts => (
 # the spec given to parse()
 has expected => (
   is       => 'rwp',
-  isa      => Int,
+  isa      => 'Int',
   default  => sub { -1 },
   init_arg => undef,
 );
@@ -60,7 +60,7 @@ has expected => (
 # attempting to use it.
 has valid => (
   is       => 'rwp',
-  isa      => Bool,
+  isa      => 'Bool',
   default  => sub { 0 },
   init_arg => undef,
 );

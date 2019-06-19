@@ -9,7 +9,7 @@ use MooseX::AttributeShortcuts;
 
 has hostmask => (
   is       => 'ro',
-  isa      => Str,
+  isa      => 'Str',
   required => 1,
 );
 
@@ -33,7 +33,7 @@ has user => (
 
 has hostname => (
   is        => 'rwp',
-  isa       => Str,
+  isa       => 'Str',
   lazy      => 1,
   predicate => 1,
   init_arg  => undef,

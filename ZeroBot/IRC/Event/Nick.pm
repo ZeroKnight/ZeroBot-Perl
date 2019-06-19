@@ -8,7 +8,7 @@ with 'ZeroBot::IRC::Event';
 
 has newnick => (
   is       => 'ro',
-  isa      => IRC_Nickname,
+  isa      => 'IRC_Nickname',
   required => 1,
 );
 

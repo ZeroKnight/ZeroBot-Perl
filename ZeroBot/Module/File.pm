@@ -14,36 +14,32 @@ with 'ZeroBot::Util::File';
 
 has name => (
   is       => 'rwp',
-  isa      => Str,
-  lazy     => 1,
+  isa      => 'Str',
   init_arg => undef,
 );
 
 has author => (
   is       => 'rwp',
-  isa      => Str,
-  lazy     => 1,
+  isa      => 'Str',
   init_arg => undef,
 );
 
 has description => (
   is       => 'rwp',
-  isa      => Str,
-  lazy     => 1,
+  isa      => 'Str',
   init_arg => undef,
 );
 
 has handle => (
   is        => 'rwp',
-  isa       => Object,
-  lazy      => 1,
+  isa       => 'Object',
   init_arg  => undef,
   predicate => 1,
 );
 
 has bad_module => (
   is  => 'rwp',
-  isa => Bool,
+  isa => 'Bool',
   default  => sub { 0 },
   init_arg => undef,
 );

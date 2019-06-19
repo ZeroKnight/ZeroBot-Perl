@@ -11,47 +11,48 @@ use MooseX::AttributeShortcuts;
 
 has cmd => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::Command'],
+  isa      => 'ZeroBot::Command',
   required => 1,
 );
 
 has spec => (
   is       => 'ro',
-  isa      => HashRef,
+  isa      => 'HashRef',
   required => 1,
 );
 
 has pos => (
   is       => 'rwp',
-  isa      => Int,
+  isa      => 'Int',
   default  => sub { 0 },
   init_arg => undef,
 );
 
 has end => (
   is       => 'ro',
-  isa      => Int,
+  isa      => 'Int',
+  lazy     => 1,
   default  => sub { length $_[0]->cmd->line },
   init_arg => undef,
 );
 
 has parse_opts => (
   is       => 'rwp',
-  isa      => Bool,
+  isa      => 'Bool',
   default  => sub { 1 },
   init_arg => undef,
 );
 
 has failed => (
   is       => 'rwp',
-  isa      => Bool,
+  isa      => 'Bool',
   default  => sub { 0 },
   init_arg => undef,
 );
 
 has _seen_opt_names => (
   is       => 'rw',
-  isa      => HashRef,
+  isa      => 'HashRef',
   default  => sub { {} },
   init_arg => undef,
 );

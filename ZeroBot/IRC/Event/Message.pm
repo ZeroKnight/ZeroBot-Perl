@@ -19,19 +19,20 @@ our @EXPORT = (keys %constants);
 our @EXPORT_OK = qw();
 
 use Moose;
+use MooseX::NonMoose;
 use MooseX::AttributeShortcuts;
 extends 'Exporter::Tiny';
 with 'ZeroBot::IRC::Event';
 
 has type => (
   is      => 'ro',
-  isa     => Int,
+  isa     => 'Int',
   default => MSGTYPE_MESSAGE,
 );
 
 has private => (
   is       => 'ro',
-  isa      => Bool,
+  isa      => 'Bool',
   lazy     => 1,
   init_arg => undef,
   default  => sub { $_[0]->_ispriv() },
@@ -39,7 +40,7 @@ has private => (
 
 has message => (
   is       => 'ro',
-  isa      => Str,
+  isa      => 'Str',
   required => 1,
 );
 

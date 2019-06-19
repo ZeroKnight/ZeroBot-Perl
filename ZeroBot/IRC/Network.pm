@@ -19,21 +19,21 @@ use MooseX::AttributeShortcuts;
 # Identifier for the Network, eg. MyNetwork
 has name => (
   is       => 'rw',
-  isa      => Str,
+  isa      => 'Str',
   required => 1,
 );
 
 # POE::Component::IRC object
 has irc => (
   is        => 'rw',
-  isa       => InstanceOf['POE::Component::IRC'],
+  isa       => 'POE::Component::IRC',
   predicate => 1,
   writer    => 'set_irc',
 );
 
 has servers => (
   is       => 'rwp',
-  isa      => ArrayRef[InstanceOf['ZeroBot::IRC::Server']],
+  isa      => 'ArrayRef[ZeroBot::IRC::Server]',
   required => 1,
 );
 
@@ -90,13 +90,13 @@ has user => (
 
 has gecos => (
   is      => 'rwp',
-  isa     => Str,
+  isa     => 'Str',
   default => "ZeroBot v$VERSION", # XXX: Get this from Core instead?
 );
 
 has host => (
   is       => 'rwp',
-  isa      => Str,
+  isa      => 'Str',
   init_arg => undef,
 );
 
@@ -111,20 +111,20 @@ has umode => (
 
 has connected => (
   is       => 'rwp',
-  isa      => Bool,
+  isa      => 'Bool',
   default  => 0,
   init_arg => undef,
 );
 
 has connected_at => (
   is       => 'rwp',
-  isa      => Int,
+  isa      => 'Int',
   init_arg => undef,
 );
 
 has connected_server => (
   is       => 'rwp',
-  isa      => InstanceOf['ZeroBot::IRC::Server'],
+  isa      => 'ZeroBot::IRC::Server',
   init_arg => undef,
 );
 

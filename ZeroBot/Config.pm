@@ -17,7 +17,7 @@ my %paths = (
 
 has core_file => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::Config::File'],
+  isa      => 'ZeroBot::Config::File',
   lazy     => 1,
   init_arg => undef,
   default  => sub {
@@ -30,7 +30,7 @@ has core_file => (
 
 has modules_file => (
   is       => 'ro',
-  isa      => InstanceOf['ZeroBot::Config::File'],
+  isa      => 'ZeroBot::Config::File',
   lazy     => 1,
   init_arg => undef,
   default  => sub {
@@ -43,7 +43,7 @@ has modules_file => (
 
 has protocol_files => (
   is       => 'rwp',
-  isa      => HashRef[InstanceOf['ZeroBot::Config::File']],
+  isa      => 'HashRef[ZeroBot::Config::File]',
   init_arg => undef,
   default  => sub { +{} },
 );
@@ -52,7 +52,7 @@ has protocol_files => (
 
 has core => (
   is       => 'ro',
-  isa      => HashRef,
+  isa      => 'HashRef',
   lazy     => 1,
   init_arg => undef,
   default  => sub { $_[0]->core_file->hash },
@@ -60,7 +60,7 @@ has core => (
 
 has modules => (
   is      => 'ro',
-  isa     => HashRef,
+  isa     => 'HashRef',
   lazy    => 1,
   init_arg => undef,
   default  => sub { $_[0]->modules_file->hash },
