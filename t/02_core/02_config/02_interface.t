@@ -20,7 +20,7 @@ can_ok('ZeroBot::Config', qw(
   get_as_list
 ));
 
-my $bot = ZeroBot::Core->instance(cfg_dir => 't/data');
+my $bot = ZeroBot::Core->initialize(cfg_dir => 't/data');
 isa_ok($bot, 'ZeroBot::Core');
 $bot->init();
 my $c = $bot->cfg;

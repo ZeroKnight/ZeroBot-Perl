@@ -8,7 +8,7 @@ package TestConsumer
   use Moose;
   with 'ZeroBot::Util::File';
 
-  has foo => (is => 'rw', isa => sub { 1 }, default => '1', predicate => 1);
+  has foo => (is => 'rw', isa => 'Any', default => '1', predicate => 'has_foo');
   sub bar
   {
     my ($self, $a) = @_;

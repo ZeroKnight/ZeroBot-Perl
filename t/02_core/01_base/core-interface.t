@@ -5,7 +5,6 @@ BEGIN { use_ok('ZeroBot::Core') }
 
 can_ok('ZeroBot::Core', qw(
   instance
-  _has_instance
   cfg_dir
   cfg
   log

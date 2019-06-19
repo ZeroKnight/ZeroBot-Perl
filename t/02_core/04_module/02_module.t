@@ -25,7 +25,7 @@ is(MODULE_EAT_PLUGIN, 3, 'EAT Const: PLUGIN is 3');
 is(MODULE_EAT_ALL,    4, 'EAT Const: ALL is 4');
 
 my $module = 'TestModule';
-my $bot = ZeroBot::Core->instance(cfg_dir => 't/data');
+my $bot = ZeroBot::Core->initialize(cfg_dir => 't/data');
 isa_ok($bot, 'ZeroBot::Core');
 $bot->init();
 module_load($module);
