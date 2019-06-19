@@ -14,14 +14,18 @@ use Path::Tiny;
 use Try::Tiny;
 use Text::Pluralize;
 
-use Moose;
-use MooseX::AttributeShortcuts;
-use Types::Standard qw(HashRef InstanceOf);
-use Types::Path::Tiny qw(Path);
-with 'MooseX::Singleton';
+# Workaround for MooseX::Singleton bug #58083
+BEGIN {
+  use Moose;
+  use MooseX::NonMoose;
 
-# PoCo::Syndicator comprises the heart of ZeroBot's module (plugin) system
-extends 'POE::Component::Syndicator';
+  # PoCo::Syndicator comprises the heart of ZeroBot's module (plugin) system
+  extends 'POE::Component::Syndicator';
+}
+
+use MooseX::Singleton;
+use MooseX::AttributeShortcuts;
+use Types::Path::Tiny qw(Path);
 
 has cfg_dir => (
   is  => 'ro',
