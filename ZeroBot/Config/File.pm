@@ -184,7 +184,8 @@ sub _update_data_from_hash
 sub _early_log
 {
   my ($self, $level, $msg) = @_;
-  if (ZeroBot::Core->_has_instance())
+  # if (ZeroBot::Core->_has_instance())
+  if (0)
   {
     Log->$level($msg);
   }
