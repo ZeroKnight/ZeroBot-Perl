@@ -1,5 +1,5 @@
 use strictures 2;
-use Test::More tests => 9;
+use Test::More tests => 8;
 
 use ZeroBot::Common;
 
@@ -11,7 +11,6 @@ sub imported
 }
 
 eval { ZeroBot::Common->import(-types) };
-ok(imported('Types::Standard'),      'types tag imports Types::Standard');
 ok(imported('ZeroBot::Util::Types'), 'types tag imports ZeroBot::Util::Types');
 
 eval { ZeroBot::Common->import(-string, -consts) };

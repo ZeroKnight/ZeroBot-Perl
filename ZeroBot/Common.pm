@@ -11,8 +11,7 @@ use Import::Into;
 # Any number of these identifiers may be specified when importing this module.
 my %import_map = (
   types => {
-    'Types::Standard'      => ['-types'],
-    'ZeroBot::Util::Types' => ['-all'],
+    'ZeroBot::Util::Types' => [':all'],
   },
 
   string => {
