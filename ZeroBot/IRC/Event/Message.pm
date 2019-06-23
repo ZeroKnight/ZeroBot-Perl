@@ -48,12 +48,13 @@ sub directed
 {
   my ($self, $nick) = @_;
   $nick //= $self->network->nick;
+  my $regex = qr/^\s*@?$nick[:,]?\s+/;
   return 0 if $self->type == MSGTYPE_ACTION;
-  return 1 if $self->message =~ /^\s*@?$nick[:,]?\s+/;
+  return 1 if $self->message =~ $regex;
 
   # Check casemapped variant as a last resort
   $nick = lc_irc($nick);
-  return 1 if lc_irc($self->message) =~ /^\s*@?$nick[:,]?\s+/;
+  return 1 if lc_irc($self->message) =~ $regex;
   return 0;
 }
 
