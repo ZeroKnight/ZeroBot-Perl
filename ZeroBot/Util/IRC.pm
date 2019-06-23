@@ -31,7 +31,7 @@ sub is_valid_chan_name_lax
 sub is_valid_mode_string
 {
   my $mode_str = shift;
-  return if !defined $mode_str || !length $mode_str;
+  return if !defined $mode_str;
   return $mode_str =~ /^ ( [+-] [[:alpha:]]+ (\ +.*)? )+ $/nx;
 }
 
