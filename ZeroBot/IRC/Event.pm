@@ -44,7 +44,7 @@ has time => (
 
 has recipient => (
   is       => 'rwp',
-  isa      => 'Str',
+  isa      => IRC_Nickname | IRC_Channel,
   lazy     => 1,
   init_arg => undef,
   default  => sub {
