@@ -133,8 +133,8 @@ sub bang
 
 sub should_kick
 {
-  return $cfg->{KickOnDeath} && $origin{network}->is_chanop($origin{dest})
-    ? 1 : 0;
+  return $cfg->{KickOnDeath} && $origin{network}->is_chanop(
+    $origin{dest}, $origin{network}->nick) ? 1 : 0;
 }
 
 sub reload
