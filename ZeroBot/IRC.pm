@@ -385,15 +385,12 @@ sub irc_snotice
   my ($network, $irc) = @{$heap}{'network', 'irc'};
   my $netname = $network->name;
 
-  # Handle server name mismatches. Typically caused by misconfigured servers.
-  # TODO: Handle rare edge case of server name change after server rehash
   if ($msg =~ /Looking up your hostname/)
   {
     my $cs = $network->connected_server;
     if ($sender ne $cs->servername)
     {
       Log->verbose("[$netname] Server at ", $cs->hostname, " calls itself $sender");
-      $cs->_set_servername($sender);
     }
   }
 
@@ -411,6 +408,8 @@ sub irc_welcome
   Log->info("Network $netname: Successfully connected to $server");
   $network->_set_connected(1);
   $network->_set_connected_at(time);
+  # TODO: Handle rare edge case of server name change after server rehash
+  $network->connected_server->_set_servername($server);
 
   # Request our Username and Host from the server, as it may have mangled our
   # Username (Freenode prefixing '~' on non-ident clients), or a cloak may have
