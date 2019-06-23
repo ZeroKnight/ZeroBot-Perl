@@ -41,9 +41,9 @@ around BUILDARGS => sub {
   return $class->$orig(
     network => $args[0],
     numeric => $args[1],
-    src     => $args[0]->get_server($args[2]),
-    rawmsg  => $args[3],
-    msg     => $args[4]
+    src     => $args[0]->connected_server,
+    rawmsg  => $args[2],
+    msg     => $args[3]
   );
 };
 

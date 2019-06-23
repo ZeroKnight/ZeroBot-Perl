@@ -559,7 +559,7 @@ sub irc_erroneous_nickname
   # 432 ERR_ERRONEUSNICKNAME
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $rpl = ZeroBot::IRC::ServerReply->new($network, 432, @_[ARG0..ARG2]);
+  my $rpl = ZeroBot::IRC::ServerReply->new($network, 432, @_[ARG1..ARG2]);
   my $badnick = $rpl->msg->[0];
   my $netname = $network->name;
 
@@ -595,7 +595,7 @@ sub irc_nickname_in_use
   # 433 ERR_NICKNAMEINUSE
   my ($self, $heap) = @_[OBJECT, HEAP];
   my ($network, $irc) = @{$heap}{'network', 'irc'};
-  my $rpl = ZeroBot::IRC::ServerReply->new($network, 433, @_[ARG0..ARG2]);
+  my $rpl = ZeroBot::IRC::ServerReply->new($network, 433, @_[ARG1..ARG2]);
   my $nick = $rpl->msg->[0];
   my $netname = $network->name;
 
@@ -640,7 +640,7 @@ sub irc_default
   # Catch any numeric replies without a callback
   if ($event =~ /irc_(\d+)/)
   {
-    my $rpl = ZeroBot::IRC::ServerReply->new($network, $1, @$args);
+    my $rpl = ZeroBot::IRC::ServerReply->new($network, $1, @{$args}[1..$#$args]);
     module_send_event(unhandled_numeric => $rpl);
     Log->verbose("[$netname] Numeric $1: ", join(' ', @{$rpl->msg}));
     return;
