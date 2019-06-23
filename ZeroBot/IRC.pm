@@ -9,6 +9,7 @@ use ZeroBot::Module::Loader -load;
 
 use ZeroBot::IRC::Network;
 use ZeroBot::IRC::Server;
+use ZeroBot::IRC::Channel;
 use ZeroBot::IRC::User;
 use ZeroBot::IRC::ServerReply;
 use ZeroBot::IRC::Event::Message;
@@ -68,7 +69,6 @@ sub _initialize_irc
   foreach my $network (keys %{$self->cfg->{Network}})
   {
     my $nethash = $self->cfg->{Network}{$network};
-    my @channels = ZBCore->cfg->get_as_list($nethash->{Channels});
     my @servers;
 
     # Create ZeroBot::IRC::Server object(s)
@@ -103,11 +103,21 @@ sub _initialize_irc
       next;
     }
 
+    # Create ZeroBot::IRC::Channel objects
+    my %channels;
+    foreach my $item (ZBCore->cfg->get_as_list($nethash->{Channels}))
+    {
+      my ($channel, $key) = split(/ /, $item, 2);
+      my %channel_opts = (name => $channel);
+      $channel_opts{key} = $key if defined $key;
+      $channels{$channel} = ZeroBot::IRC::Channel->new(%channel_opts);
+    }
+
     # Create ZeroBot::IRC::Network object
     my %network_opts = (
       name     => $network,
       servers  => [ @servers ],
-      channels => [ map { [split / /, $_, 2] } @channels ],
+      channels => { %channels },
     );
 
     # Helper sub to prepare %network_opts. Similar to the one above for servers.
@@ -165,6 +175,7 @@ sub _create_network_session
         irc_snotice
 
         irc_join
+        irc_chan_sync
         irc_kick
         irc_nick
 
@@ -420,13 +431,12 @@ sub irc_welcome
   # module_send_event(connected => ...);
 
   # Join configured channels
-  my @channels = @{$network->channels};
-  my @list = map $_->[0], @channels;
+  my @chanlist = $network->get_channel_list;
   local $" = ', ';
-  Log->info(pluralize("[$netname] Joining %d channel(s): @list", @channels));
-  foreach my $channel (@channels)
+  Log->info(pluralize("[$netname] Joining %d channel(s): @chanlist", @chanlist));
+  foreach my $pair ($network->get_channel_pairs)
   {
-    my ($name, $key) = @$channel;
+    my ($name, $key) = @$pair;
     $irc->yield(join => $name, $key ? $key : ());
   }
 
@@ -436,13 +446,24 @@ sub irc_welcome
 
 sub irc_join
 {
-  my ($self, $heap) = @_[OBJECT, HEAP];
+  my ($self, $heap, $who, $channel) = @_[OBJECT, HEAP, ARG0, ARG1];
+  my ($network, $irc) = @{$heap}{'network', 'irc'};
+
   my $join = ZeroBot::IRC::Event::Join->new(
-    network => $heap->{network},
-    src     => ZeroBot::IRC::User->new($_[ARG0]),
-    dest    => $_[ARG1],
+    network => $network,
+    src     => ZeroBot::IRC::User->new($who),
+    dest    => $channel,
   );
   module_send_event(irc_joined => $join);
+}
+
+sub irc_chan_sync
+{
+  my ($self, $heap, $channel, $seconds) = @_[OBJECT, HEAP, ARG0, ARG1];
+  my ($network, $irc) = @{$heap}{'network', 'irc'};
+
+  my $mode = $irc->channel_modes($channel);
+  $network->get_channel($channel)->_set_mode($mode);
 }
 
 sub irc_kick
