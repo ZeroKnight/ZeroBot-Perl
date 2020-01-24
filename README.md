@@ -1,5 +1,16 @@
-ZeroBot
+ZeroBot(-Perl)
 =========
+
+NOTICE
+------
+
+This particular incarnation of ZeroBot, in the midst of yet another swapping of Moo/Moose, is defunct and will no longer be worked on. Instead, I am returning to ZeroBot's origin for his third (or like sixth if you count the *multiple* Perl redesigns) and hopefully final incarnation and once again rewriting him in Python. I recently fell a bit in love with Python despite my fledgling opinions from the past, and given Python's amazing standard library combined with my irritations with managing Perl modules leaves me feeling confident that I can get up to speed again faster than I did with Perl.
+
+In returning to Python, I can do away with the satanic amalgamation of PoCo::IRC within a PoCo::Syndicator and all the joy that working with it brings, have feature modules that actually *fully* unload and are less of a hassle to juggle, and more actively maintained libraries in general. I'm also excited to be able to leverage Async I/O, and well...have a proper OO system built into the language. Moose is dandy, but managing it can be a giant pain.
+
+At any rate, that's all the rambling I'll be doing here. This repository has been renamed and will be archived, and ZeroBot's ongoing development will take place at the original location: [ZeroKnight/ZeroBot](https://github.com/ZeroKnight/ZeroBot). It was a fun foray through Perl, and while I still like the language, its module management truly repels me from working with it for larger projects.
+
+The following is the rest of the README, as it was before archival.
 
 My personal, batshit-insane IRC bot
 -------------------------------------
